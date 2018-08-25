@@ -1,5 +1,7 @@
 'use strict';
 
+const deferToConnect = require('defer-to-connect');
+
 module.exports = request => {
 	const timings = {
 		start: Date.now(),
@@ -13,18 +15,8 @@ module.exports = request => {
 			dns: null,
 			firstByte: null,
 			download: null,
+			tcp: null,
 			total: null
-		}
-	};
-
-	const onSocketConnect = () => {
-		timings.connect = Date.now();
-		timings.phases.tcp = timings.connect - timings.socket;
-
-		/* istanbul ignore next: hard to test */
-		if (!timings.lookup) {
-			timings.lookup = timings.connect;
-			timings.phases.dns = timings.lookup - timings.socket;
 		}
 	};
 
@@ -32,16 +24,22 @@ module.exports = request => {
 		timings.socket = Date.now();
 		timings.phases.wait = timings.socket - timings.start;
 
-		/* istanbul ignore next: hard to test */
-		if (socket.connecting) {
-			socket.once('connect', () => onSocketConnect(socket));
-			socket.once('lookup', () => {
-				timings.lookup = Date.now();
+		socket.once('lookup', () => {
+			timings.lookup = Date.now();
+			timings.phases.dns = timings.lookup - timings.socket;
+		});
+
+		deferToConnect(socket, () => {
+			timings.connect = Date.now();
+
+			/* istanbul ignore next: hard to test */
+			if (timings.lookup === null) {
+				timings.lookup = timings.connect;
 				timings.phases.dns = timings.lookup - timings.socket;
-			});
-		} else {
-			onSocketConnect(socket);
-		}
+			}
+
+			timings.phases.tcp = timings.connect - timings.lookup;
+		});
 	});
 
 	request.on('response', response => {
