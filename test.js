@@ -115,3 +115,21 @@ test('sets `total` on request error', async t => {
 	t.is(typeof timings.error, 'number');
 	t.is(timings.phases.total, timings.error - timings.start);
 });
+
+test('sets `total` on response error', async t => {
+	const error = 'Simple error';
+
+	const request = http.get(`${s.url}/delayed-response`, response => {
+		setImmediate(() => {
+			response.emit('error', new Error(error));
+		});
+	});
+	const timings = timer(request);
+
+	const response = await pEvent(request, 'response');
+	const err = await pEvent(response, 'error');
+
+	t.is(err.message, error);
+	t.is(typeof timings.error, 'number');
+	t.is(timings.phases.total, timings.error - timings.start);
+});

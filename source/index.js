@@ -72,6 +72,8 @@ module.exports = request => {
 		timings.response = Date.now();
 		timings.phases.firstByte = timings.response - timings.upload;
 
+		handleError(response);
+
 		response.once('end', () => {
 			timings.end = Date.now();
 			timings.phases.download = timings.end - timings.response;
