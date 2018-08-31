@@ -1,7 +1,26 @@
+import http from 'http';
 import https from 'https';
+import util from 'util';
 import test from 'ava';
 import pEvent from 'p-event';
 import timer from '.';
+
+let s;
+test.before('setup', async () => {
+	s = http.createServer((request, response) => {
+		response.end('ok');
+	});
+
+	s.listen = util.promisify(s.listen.bind(s));
+	s.close = util.promisify(s.close.bind(s));
+
+	await s.listen();
+	s.url = `http://127.0.0.1:${s.address().port}`;
+});
+
+test.after('cleanup', async () => {
+	await s.close();
+});
 
 const makeRequest = () => {
 	const request = https.get('https://httpbin.org/anything');
@@ -58,4 +77,13 @@ test('phases', async t => {
 	t.is(timings.phases.download, timings.end - timings.response);
 	t.is(timings.phases.tcp, timings.connect - timings.lookup);
 	t.is(timings.phases.total, timings.end - timings.start);
+});
+
+test('no memory leak (`lookup` event)', async t => {
+	const request = http.get(s.url);
+	timer(request);
+
+	await pEvent(request, 'finish');
+
+	t.is(request.socket.listenerCount('lookup'), 0);
 });

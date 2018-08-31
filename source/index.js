@@ -20,20 +20,22 @@ module.exports = request => {
 		}
 	};
 
-	request.on('socket', socket => {
+	request.once('socket', socket => {
 		timings.socket = Date.now();
 		timings.phases.wait = timings.socket - timings.start;
 
-		socket.once('lookup', () => {
+		const lookupListener = () => {
 			timings.lookup = Date.now();
 			timings.phases.dns = timings.lookup - timings.socket;
-		});
+		};
+
+		socket.once('lookup', lookupListener);
 
 		deferToConnect(socket, () => {
 			timings.connect = Date.now();
 
-			/* istanbul ignore next: hard to test */
 			if (timings.lookup === null) {
+				socket.removeListener('lookup', lookupListener);
 				timings.lookup = timings.connect;
 				timings.phases.dns = timings.lookup - timings.socket;
 			}
@@ -42,11 +44,11 @@ module.exports = request => {
 		});
 	});
 
-	request.on('response', response => {
+	request.once('response', response => {
 		timings.response = Date.now();
 		timings.phases.firstByte = timings.response - timings.connect;
 
-		response.on('end', () => {
+		response.once('end', () => {
 			timings.end = Date.now();
 			timings.phases.download = timings.end - timings.response;
 			timings.phases.total = timings.end - timings.start;
