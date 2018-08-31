@@ -8,7 +8,13 @@ import timer from '.';
 let s;
 test.before('setup', async () => {
 	s = http.createServer((request, response) => {
-		response.end('ok');
+		if (request.url === '/delayed-response') {
+			setTimeout(() => {
+				response.end('ok');
+			}, 2000);
+		} else {
+			response.end('ok');
+		}
 	});
 
 	s.listen = util.promisify(s.listen.bind(s));
@@ -40,6 +46,7 @@ test('by default everything is set to null', t => {
 	t.is(timings.connect, null);
 	t.is(timings.response, null);
 	t.is(timings.end, null);
+	t.is(timings.error, null);
 });
 
 test('timings', async t => {
@@ -67,16 +74,17 @@ test('phases', async t => {
 	t.is(typeof timings.phases, 'object');
 	t.is(typeof timings.phases.wait, 'number');
 	t.is(typeof timings.phases.dns, 'number');
+	t.is(typeof timings.phases.tcp, 'number');
 	t.is(typeof timings.phases.firstByte, 'number');
 	t.is(typeof timings.phases.download, 'number');
-	t.is(typeof timings.phases.tcp, 'number');
 	t.is(typeof timings.phases.total, 'number');
 
 	t.is(timings.phases.wait, timings.socket - timings.start);
 	t.is(timings.phases.dns, timings.lookup - timings.socket);
+	t.is(timings.phases.tcp, timings.connect - timings.lookup);
+	t.is(timings.phases.request, timings.upload - timings.connect);
 	t.is(timings.phases.firstByte, timings.response - timings.upload);
 	t.is(timings.phases.download, timings.end - timings.response);
-	t.is(timings.phases.tcp, timings.connect - timings.lookup);
 	t.is(timings.phases.total, timings.end - timings.start);
 });
 
@@ -87,4 +95,19 @@ test('no memory leak (`lookup` event)', async t => {
 	await pEvent(request, 'finish');
 
 	t.is(request.socket.listenerCount('lookup'), 0);
+});
+
+test('sets `total` on request error', async t => {
+	const request = http.get(`${s.url}/delayed-response`, {timeout: 1});
+	request.on('timeout', () => {
+		request.abort();
+	});
+
+	const timings = timer(request);
+
+	const err = await pEvent(request, 'error');
+	t.is(err.message, 'socket hang up');
+
+	t.is(typeof timings.error, 'number');
+	t.is(timings.phases.total, timings.error - timings.start);
 });

@@ -40,6 +40,31 @@ request.on('response', response => {
 //      total: 597 } }
 ```
 
+## API
+
+### timer(request)
+
+Returns: `Object`
+
+- `start` - Time when the request started.
+- `socket` - Time when a socket was assigned to the request.
+- `lookup` - Time when the DNS lookup finished.
+- `connect` - Time when the socket successfully connected.
+- `upload` - Time when the request finished uploading.
+- `response` - Time when the request fired the `response` event.
+- `end` - Time when the response fired the `end` event.
+- `error` - Time when the request fired the `error` event.
+- `phases`
+	- `wait` - `timings.socket - timings.start`
+	- `dns` - `timings.lookup - timings.socket`
+	- `tcp` - `timings.connect - timings.lookup`
+	- `request` - `timings.upload - timings.connect`
+	- `firstByte` - `timings.response - timings.upload`
+	- `download` - `timings.end - timings.response`
+	- `total` - `timings.end - timings.start` or `timings.error - timings.start`
+
+**Note**: The time is a `number` representing the milliseconds elapsed since the UNIX epoch.
+
 ## License
 
 MIT

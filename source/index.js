@@ -11,6 +11,7 @@ module.exports = request => {
 		upload: null,
 		response: null,
 		end: null,
+		error: null,
 		phases: {
 			wait: null,
 			dns: null,
@@ -21,6 +22,11 @@ module.exports = request => {
 			total: null
 		}
 	};
+
+	request.once('error', () => {
+		timings.error = Date.now();
+		timings.phases.total = timings.error - timings.start;
+	});
 
 	request.once('socket', socket => {
 		timings.socket = Date.now();
