@@ -1,6 +1,7 @@
 import http from 'http';
 import https from 'https';
 import util from 'util';
+import url from 'url';
 import test from 'ava';
 import pEvent from 'p-event';
 import timer from '.';
@@ -98,7 +99,10 @@ test('no memory leak (`lookup` event)', async t => {
 });
 
 test('sets `total` on request error', async t => {
-	const request = http.get(`${s.url}/delayed-response`, {timeout: 1});
+	const request = http.get({
+		...url.parse(`${s.url}/delayed-response`),
+		timeout: 1
+	});
 	request.on('timeout', () => {
 		request.abort();
 	});

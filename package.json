@@ -4,7 +4,7 @@
 	"description": "Timings for HTTP requests",
 	"main": "source",
 	"engines": {
-		"node": ">=5.10.0"
+		"node": ">=6"
 	},
 	"scripts": {
 		"test": "xo && nyc ava",
