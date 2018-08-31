@@ -8,14 +8,16 @@ module.exports = request => {
 		socket: null,
 		lookup: null,
 		connect: null,
+		upload: null,
 		response: null,
 		end: null,
 		phases: {
 			wait: null,
 			dns: null,
+			tcp: null,
+			request: null,
 			firstByte: null,
 			download: null,
-			tcp: null,
 			total: null
 		}
 	};
@@ -44,9 +46,14 @@ module.exports = request => {
 		});
 	});
 
+	request.once('finish', () => {
+		timings.upload = Date.now();
+		timings.phases.request = timings.upload - timings.connect;
+	});
+
 	request.once('response', response => {
 		timings.response = Date.now();
-		timings.phases.firstByte = timings.response - timings.connect;
+		timings.phases.firstByte = timings.response - timings.upload;
 
 		response.once('end', () => {
 			timings.end = Date.now();

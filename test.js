@@ -53,6 +53,7 @@ test('timings', async t => {
 	t.is(typeof timings.socket, 'number');
 	t.is(typeof timings.lookup, 'number');
 	t.is(typeof timings.connect, 'number');
+	t.is(typeof timings.upload, 'number');
 	t.is(typeof timings.response, 'number');
 	t.is(typeof timings.end, 'number');
 });
@@ -73,7 +74,7 @@ test('phases', async t => {
 
 	t.is(timings.phases.wait, timings.socket - timings.start);
 	t.is(timings.phases.dns, timings.lookup - timings.socket);
-	t.is(timings.phases.firstByte, timings.response - timings.connect);
+	t.is(timings.phases.firstByte, timings.response - timings.upload);
 	t.is(timings.phases.download, timings.end - timings.response);
 	t.is(timings.phases.tcp, timings.connect - timings.lookup);
 	t.is(timings.phases.total, timings.end - timings.start);

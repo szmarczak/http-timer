@@ -23,19 +23,21 @@ request.on('response', response => {
 	});
 });
 
-// { start: 1535183088427,
-//   socket: 1535183088429,
-//   lookup: 1535183088465,
-//   connect: 1535183088602,
-//   response: 1535183089049,
-//   end: 1535183089050,
+// { start: 1535708511443,
+//   socket: 1535708511444,
+//   lookup: 1535708511444,
+//   connect: 1535708511582,
+//   upload: 1535708511887,
+//   response: 1535708512037,
+//   end: 1535708512040,
 //   phases:
-//    { wait: 2,
-//      dns: 36,
-//      firstByte: 447,
-//      download: 1,
-//      tcp: 137,
-//      total: 623 } }
+//    { wait: 1,
+//      dns: 0,
+//      tcp: 138,
+//      request: 305,
+//      firstByte: 150,
+//      download: 3,
+//      total: 597 } }
 ```
 
 ## License
