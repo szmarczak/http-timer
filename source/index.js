@@ -23,10 +23,21 @@ module.exports = request => {
 		}
 	};
 
-	request.once('error', () => {
-		timings.error = Date.now();
-		timings.phases.total = timings.error - timings.start;
-	});
+	const handleError = origin => {
+		const emit = origin.emit.bind(origin);
+		origin.emit = (event, ...args) => {
+			// Catches the `error` event
+			if (event === 'error') {
+				timings.error = Date.now();
+				timings.phases.total = timings.error - timings.start;
+			}
+
+			// Saves the original behavior
+			return emit(event, ...args);
+		};
+	};
+
+	handleError(request);
 
 	request.once('socket', socket => {
 		timings.socket = Date.now();

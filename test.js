@@ -10,9 +10,9 @@ let s;
 test.before('setup', async () => {
 	s = http.createServer((request, response) => {
 		if (request.url === '/delayed-response') {
-			setTimeout(() => {
-				response.end('ok');
-			}, 2000);
+			response.write('o');
+
+			setTimeout(() => response.end('k'), 200);
 		} else {
 			response.end('ok');
 		}
