@@ -2,6 +2,7 @@ import http from 'http';
 import https from 'https';
 import util from 'util';
 import url from 'url';
+import EventEmitter from 'events';
 import test from 'ava';
 import pEvent from 'p-event';
 import timer from '.';
@@ -28,6 +29,8 @@ test.before('setup', async () => {
 test.after('cleanup', async () => {
 	await s.close();
 });
+
+const error = 'Simple error';
 
 const makeRequest = () => {
 	const request = https.get('https://httpbin.org/anything');
@@ -117,8 +120,6 @@ test('sets `total` on request error', async t => {
 });
 
 test('sets `total` on response error', async t => {
-	const error = 'Simple error';
-
 	const request = http.get(`${s.url}/delayed-response`, response => {
 		setImmediate(() => {
 			response.emit('error', new Error(error));
@@ -132,4 +133,12 @@ test('sets `total` on response error', async t => {
 	t.is(err.message, error);
 	t.is(typeof timings.error, 'number');
 	t.is(timings.phases.total, timings.error - timings.start);
+});
+
+test('doesn\'t throw when someone used `.prependOnceListener()`', async t => {
+	const emitter = new EventEmitter();
+	timer(emitter);
+	emitter.prependOnceListener('error', () => {});
+
+	await t.notThrows(() => emitter.emit('error', new Error(error)));
 });
