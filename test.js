@@ -1,7 +1,7 @@
 import http from 'http';
 import https from 'https';
 import util from 'util';
-import url from 'url';
+import {URL, parse as parseUrl} from 'url';
 import EventEmitter from 'events';
 import test from 'ava';
 import pEvent from 'p-event';
@@ -32,16 +32,18 @@ test.after('cleanup', async () => {
 
 const error = 'Simple error';
 
-const makeRequest = () => {
-	const request = https.get('https://httpbin.org/anything');
+const makeRequest = (url = 'https://httpbin.org/anything') => {
+	const {protocol} = new URL(url);
+	const fn = protocol === 'http:' ? http : https;
+
+	const request = fn.get(url);
 	const timings = timer(request);
 
 	return {request, timings};
 };
 
 test('by default everything is set to null', t => {
-	const request = https.get('https://httpbin.org/anything');
-	const timings = timer(request);
+	const {timings} = makeRequest();
 
 	t.is(typeof timings, 'object');
 	t.is(typeof timings.start, 'number');
@@ -93,8 +95,7 @@ test('phases', async t => {
 });
 
 test('no memory leak (`lookup` event)', async t => {
-	const request = http.get(s.url);
-	timer(request);
+	const {request} = makeRequest();
 
 	await pEvent(request, 'finish');
 
@@ -103,7 +104,7 @@ test('no memory leak (`lookup` event)', async t => {
 
 test('sets `total` on request error', async t => {
 	const request = http.get({
-		...url.parse(`${s.url}/delayed-response`),
+		...parseUrl(`${s.url}/delayed-response`),
 		timeout: 1
 	});
 	request.on('timeout', () => {
@@ -141,4 +142,27 @@ test('doesn\'t throw when someone used `.prependOnceListener()`', async t => {
 	emitter.prependOnceListener('error', () => {});
 
 	await t.notThrows(() => emitter.emit('error', new Error(error)));
+});
+
+test('sensible timings', async t => {
+	const {timings, request} = makeRequest('http://google.com');
+	const now = Date.now();
+
+	const response = await pEvent(request, 'response');
+	response.resume();
+	await pEvent(response, 'end');
+
+	t.true(timings.socket >= now);
+	t.true(timings.lookup >= now);
+	t.true(timings.connect >= now);
+	t.true(timings.response >= now);
+	t.true(timings.end >= now);
+	t.is(timings.error, null);
+	t.true(timings.phases.wait < 1000);
+	t.true(timings.phases.dns < 1000);
+	t.true(timings.phases.tcp < 1000);
+	t.true(timings.phases.request < 1000);
+	t.true(timings.phases.firstByte < 1000);
+	t.true(timings.phases.download < 1000);
+	t.true(timings.phases.total < 1000);
 });

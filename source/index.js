@@ -1,5 +1,4 @@
 'use strict';
-
 const deferToConnect = require('defer-to-connect');
 
 module.exports = request => {
@@ -30,11 +29,19 @@ module.exports = request => {
 			if (event === 'error') {
 				timings.error = Date.now();
 				timings.phases.total = timings.error - timings.start;
+
+				origin.emit = emit;
 			}
 
 			// Saves the original behavior
 			return emit(event, ...args);
 		};
+	};
+
+	let uploadFinished = false;
+	const onUpload = () => {
+		timings.upload = Date.now();
+		timings.phases.request = timings.upload - timings.connect;
 	};
 
 	handleError(request);
@@ -60,12 +67,19 @@ module.exports = request => {
 			}
 
 			timings.phases.tcp = timings.connect - timings.lookup;
+
+			if (uploadFinished && !timings.upload) {
+				onUpload();
+			}
 		});
 	});
 
 	request.once('finish', () => {
-		timings.upload = Date.now();
-		timings.phases.request = timings.upload - timings.connect;
+		uploadFinished = true;
+
+		if (timings.connect) {
+			onUpload();
+		}
 	});
 
 	request.once('response', response => {
