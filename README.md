@@ -7,6 +7,16 @@
 
 Inspired by the [`request` package](https://github.com/request/request).
 
+## Installation
+
+NPM:
+
+> `npm install @szmarczak/http-timer`
+
+Yarn:
+
+> `yarn add @szmarczak/http-timer`
+
 ## Usage
 ```js
 'use strict';
