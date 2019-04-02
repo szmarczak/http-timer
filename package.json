@@ -7,7 +7,7 @@
 		"node": ">=6"
 	},
 	"scripts": {
-		"test": "xo && nyc ava",
+		"test": "xo && nyc ava && tsd",
 		"coveralls": "nyc report --reporter=text-lcov | coveralls"
 	},
 	"files": [
@@ -37,8 +37,9 @@
 	"devDependencies": {
 		"ava": "^0.25.0",
 		"coveralls": "^3.0.2",
-		"p-event": "^2.1.0",
 		"nyc": "^12.0.2",
+		"p-event": "^2.1.0",
+		"tsd": "^0.7.2",
 		"xo": "^0.22.0"
 	},
 	"dependencies": {

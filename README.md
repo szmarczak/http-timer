@@ -73,6 +73,8 @@ Returns: `Object`
 	- `download` - `timings.end - timings.response`
 	- `total` - `timings.end - timings.start` or `timings.error - timings.start`
 
+If something's not been measured yet, it defaults to `undefined`.
+
 **Note**: The time is a `number` representing the milliseconds elapsed since the UNIX epoch.
 
 ## License

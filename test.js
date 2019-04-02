@@ -42,17 +42,17 @@ const makeRequest = (url = 'https://httpbin.org/anything') => {
 	return {request, timings};
 };
 
-test('by default everything is set to null', t => {
+test('by default everything is set to undefined', t => {
 	const {timings} = makeRequest();
 
 	t.is(typeof timings, 'object');
 	t.is(typeof timings.start, 'number');
-	t.is(timings.socket, null);
-	t.is(timings.lookup, null);
-	t.is(timings.connect, null);
-	t.is(timings.response, null);
-	t.is(timings.end, null);
-	t.is(timings.error, null);
+	t.is(timings.socket, undefined);
+	t.is(timings.lookup, undefined);
+	t.is(timings.connect, undefined);
+	t.is(timings.response, undefined);
+	t.is(timings.end, undefined);
+	t.is(timings.error, undefined);
 });
 
 test('timings', async t => {
@@ -157,7 +157,7 @@ test('sensible timings', async t => {
 	t.true(timings.connect >= now);
 	t.true(timings.response >= now);
 	t.true(timings.end >= now);
-	t.is(timings.error, null);
+	t.is(timings.error, undefined);
 	t.true(timings.phases.wait < 1000);
 	t.true(timings.phases.dns < 1000);
 	t.true(timings.phases.tcp < 1000);

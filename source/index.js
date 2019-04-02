@@ -1,24 +1,24 @@
 'use strict';
 const deferToConnect = require('defer-to-connect');
 
-module.exports = request => {
+const timer = request => {
 	const timings = {
 		start: Date.now(),
-		socket: null,
-		lookup: null,
-		connect: null,
-		upload: null,
-		response: null,
-		end: null,
-		error: null,
+		socket: undefined,
+		lookup: undefined,
+		connect: undefined,
+		upload: undefined,
+		response: undefined,
+		end: undefined,
+		error: undefined,
 		phases: {
-			wait: null,
-			dns: null,
-			tcp: null,
-			request: null,
-			firstByte: null,
-			download: null,
-			total: null
+			wait: undefined,
+			dns: undefined,
+			tcp: undefined,
+			request: undefined,
+			firstByte: undefined,
+			download: undefined,
+			total: undefined
 		}
 	};
 
@@ -60,7 +60,7 @@ module.exports = request => {
 		deferToConnect(socket, () => {
 			timings.connect = Date.now();
 
-			if (timings.lookup === null) {
+			if (timings.lookup === undefined) {
 				socket.removeListener('lookup', lookupListener);
 				timings.lookup = timings.connect;
 				timings.phases.dns = timings.lookup - timings.socket;
@@ -97,3 +97,6 @@ module.exports = request => {
 
 	return timings;
 };
+
+module.exports = timer;
+module.exports.default = timer;
