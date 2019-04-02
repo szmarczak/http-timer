@@ -15,7 +15,6 @@ expectType<pending>(timings.upload);
 expectType<pending>(timings.response);
 expectType<pending>(timings.end);
 expectType<pending>(timings.error);
-expectType<pending>(timings.phase);
 expectType<pending>(timings.phases.wait);
 expectType<pending>(timings.phases.dns);
 expectType<pending>(timings.phases.tcp);
