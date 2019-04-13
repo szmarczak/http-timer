@@ -20,5 +20,4 @@ interface Timings {
     };
 }
 declare const timer: (request: ClientRequest) => Timings;
-declare const exported: typeof timer & Timings;
-export = exported;
+export = timer;

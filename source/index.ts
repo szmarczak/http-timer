@@ -1,6 +1,7 @@
 import {EventEmitter} from 'events';
 import {Socket} from 'net';
 import {ClientRequest, IncomingMessage} from 'http';
+// @ts-ignore
 import deferToConnect from 'defer-to-connect';
 
 interface Timings {
@@ -20,7 +21,7 @@ interface Timings {
 		firstByte?: number;
 		download?: number;
 		total?: number;
-	}
+	};
 }
 
 const timer = (request: ClientRequest): Timings => {
@@ -61,7 +62,7 @@ const timer = (request: ClientRequest): Timings => {
 	};
 
 	let uploadFinished = false;
-	const onUpload = () => {
+	const onUpload = (): void => {
 		timings.upload = Date.now();
 		timings.phases.request = timings.upload - timings.connect!;
 	};
@@ -72,7 +73,7 @@ const timer = (request: ClientRequest): Timings => {
 		timings.socket = Date.now();
 		timings.phases.wait = timings.socket - timings.start;
 
-		const lookupListener = () => {
+		const lookupListener = (): void => {
 			timings.lookup = Date.now();
 			timings.phases.dns = timings.lookup - timings.socket!;
 		};
@@ -120,6 +121,4 @@ const timer = (request: ClientRequest): Timings => {
 	return timings;
 };
 
-declare const exported: typeof timer & Timings;
-
-export = exported;
+export = timer;

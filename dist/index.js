@@ -2,6 +2,7 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+// @ts-ignore
 const defer_to_connect_1 = __importDefault(require("defer-to-connect"));
 const timer = (request) => {
     const timings = {
@@ -81,5 +82,5 @@ const timer = (request) => {
     });
     return timings;
 };
-module.exports = exported;
+module.exports = timer;
 //# sourceMappingURL=index.js.map

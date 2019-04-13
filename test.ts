@@ -5,8 +5,8 @@ import util from 'util';
 import {URL, parse as parseUrl} from 'url';
 import EventEmitter from 'events';
 import test from 'ava';
-import pEvent from 'p-event';
-import timer from './source';
+import pEvent from 'p-event'; // eslint-disable-line import/newline-after-import
+import timer = require('./source');
 
 let s: http.Server & {
 	url?: string;
@@ -36,7 +36,7 @@ test.after('cleanup', async () => {
 
 const error = 'Simple error';
 
-const makeRequest = (url = 'https://httpbin.org/anything') => {
+const makeRequest = (url = 'https://httpbin.org/anything'): {request: ClientRequest; timings: timer.Timings} => {
 	const {protocol} = new URL(url);
 	const fn = protocol === 'http:' ? http : https;
 

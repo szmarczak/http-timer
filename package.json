@@ -31,15 +31,6 @@
 		"url": "https://github.com/szmarczak/http-timer/issues"
 	},
 	"homepage": "https://github.com/szmarczak/http-timer#readme",
-	"xo": {
-		"extends": "xo-typescript",
-		"extensions": [
-			"ts"
-		],
-		"rules": {
-			"import/no-unresolved": "off"
-		}
-	},
 	"devDependencies": {
 		"@sindresorhus/tsconfig": "^0.3.0",
 		"@types/node": "^11.13.4",
@@ -51,13 +42,34 @@
 		"eslint-config-xo-typescript": "^0.9.0",
 		"nyc": "^12.0.2",
 		"p-event": "^2.1.0",
+		"ts-node": "^8.0.3",
 		"typescript": "^3.4.3",
 		"xo": "^0.22.0"
 	},
 	"dependencies": {},
+	"xo": {
+		"extends": "xo-typescript",
+		"extensions": [
+			"ts"
+		],
+		"rules": {
+			"import/no-unresolved": "off",
+			"ava/no-ignored-test-files": "off",
+			"@typescript-eslint/no-require-imports": "off"
+		}
+	},
 	"nyc": {
 		"extension": [
 			".ts"
+		]
+	},
+	"ava": {
+		"compileEnhancements": false,
+		"extensions": [
+			"ts"
+		],
+		"require": [
+			"ts-node/register"
 		]
 	}
 }
