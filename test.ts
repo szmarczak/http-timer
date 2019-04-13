@@ -1,13 +1,17 @@
-import http from 'http';
+import {AddressInfo} from 'net';
+import http, {ClientRequest} from 'http';
 import https from 'https';
 import util from 'util';
 import {URL, parse as parseUrl} from 'url';
 import EventEmitter from 'events';
 import test from 'ava';
 import pEvent from 'p-event';
-import timer from '.';
+import timer from './source';
 
-let s;
+let s: http.Server & {
+	url?: string;
+};
+
 test.before('setup', async () => {
 	s = http.createServer((request, response) => {
 		if (request.url === '/delayed-response') {
@@ -23,7 +27,7 @@ test.before('setup', async () => {
 	s.close = util.promisify(s.close.bind(s));
 
 	await s.listen();
-	s.url = `http://127.0.0.1:${s.address().port}`;
+	s.url = `http://127.0.0.1:${(s.address() as AddressInfo).port}`;
 });
 
 test.after('cleanup', async () => {
@@ -138,7 +142,7 @@ test('sets `total` on response error', async t => {
 
 test('doesn\'t throw when someone used `.prependOnceListener()`', async t => {
 	const emitter = new EventEmitter();
-	timer(emitter);
+	timer(emitter as ClientRequest);
 	emitter.prependOnceListener('error', () => {});
 
 	await t.notThrows(() => emitter.emit('error', new Error(error)));

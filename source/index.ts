@@ -1,8 +1,30 @@
-'use strict';
-const deferToConnect = require('defer-to-connect');
+import {EventEmitter} from 'events';
+import {Socket} from 'net';
+import {ClientRequest, IncomingMessage} from 'http';
+import deferToConnect from 'defer-to-connect';
 
-const timer = request => {
-	const timings = {
+interface Timings {
+	start: number;
+	socket?: number;
+	lookup?: number;
+	connect?: number;
+	upload?: number;
+	response?: number;
+	end?: number;
+	error?: number;
+	phases: {
+		wait?: number;
+		dns?: number;
+		tcp?: number;
+		request?: number;
+		firstByte?: number;
+		download?: number;
+		total?: number;
+	}
+}
+
+const timer = (request: ClientRequest): Timings => {
+	const timings: Timings = {
 		start: Date.now(),
 		socket: undefined,
 		lookup: undefined,
@@ -22,7 +44,7 @@ const timer = request => {
 		}
 	};
 
-	const handleError = origin => {
+	const handleError = (origin: EventEmitter): void => {
 		const emit = origin.emit.bind(origin);
 		origin.emit = (event, ...args) => {
 			// Catches the `error` event
@@ -41,18 +63,18 @@ const timer = request => {
 	let uploadFinished = false;
 	const onUpload = () => {
 		timings.upload = Date.now();
-		timings.phases.request = timings.upload - timings.connect;
+		timings.phases.request = timings.upload - timings.connect!;
 	};
 
 	handleError(request);
 
-	request.once('socket', socket => {
+	request.once('socket', (socket: Socket): void => {
 		timings.socket = Date.now();
 		timings.phases.wait = timings.socket - timings.start;
 
 		const lookupListener = () => {
 			timings.lookup = Date.now();
-			timings.phases.dns = timings.lookup - timings.socket;
+			timings.phases.dns = timings.lookup - timings.socket!;
 		};
 
 		socket.once('lookup', lookupListener);
@@ -63,7 +85,7 @@ const timer = request => {
 			if (timings.lookup === undefined) {
 				socket.removeListener('lookup', lookupListener);
 				timings.lookup = timings.connect;
-				timings.phases.dns = timings.lookup - timings.socket;
+				timings.phases.dns = timings.lookup - timings.socket!;
 			}
 
 			timings.phases.tcp = timings.connect - timings.lookup;
@@ -82,15 +104,15 @@ const timer = request => {
 		}
 	});
 
-	request.once('response', response => {
+	request.once('response', (response: IncomingMessage): void => {
 		timings.response = Date.now();
-		timings.phases.firstByte = timings.response - timings.upload;
+		timings.phases.firstByte = timings.response - timings.upload!;
 
 		handleError(response);
 
 		response.once('end', () => {
 			timings.end = Date.now();
-			timings.phases.download = timings.end - timings.response;
+			timings.phases.download = timings.end - timings.response!;
 			timings.phases.total = timings.end - timings.start;
 		});
 	});
@@ -98,5 +120,6 @@ const timer = request => {
 	return timings;
 };
 
-module.exports = timer;
-module.exports.default = timer;
+declare const exported: typeof timer & Timings;
+
+export = exported;
