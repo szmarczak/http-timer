@@ -24,7 +24,7 @@ export interface Timings {
 	};
 }
 
-const timer = (request: ClientRequest): Timings => {
+export default (request: ClientRequest): Timings => {
 	const timings: Timings = {
 		start: Date.now(),
 		socket: undefined,
@@ -120,5 +120,3 @@ const timer = (request: ClientRequest): Timings => {
 
 	return timings;
 };
-
-export = timer;
