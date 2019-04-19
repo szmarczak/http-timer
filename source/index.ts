@@ -4,7 +4,7 @@ import {ClientRequest, IncomingMessage} from 'http';
 // @ts-ignore
 import deferToConnect from 'defer-to-connect';
 
-interface Timings {
+export interface Timings {
 	start: number;
 	socket?: number;
 	lookup?: number;

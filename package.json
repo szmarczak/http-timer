@@ -2,7 +2,7 @@
 	"name": "@szmarczak/http-timer",
 	"version": "1.1.2",
 	"description": "Timings for HTTP requests",
-	"main": "source",
+	"main": "dist",
 	"engines": {
 		"node": ">=8"
 	},
@@ -37,7 +37,6 @@
 		"@typescript-eslint/eslint-plugin": "^1.6.0",
 		"ava": "^0.25.0",
 		"coveralls": "^3.0.2",
-		"defer-to-connect": "^1.0.2",
 		"del-cli": "^1.1.0",
 		"eslint-config-xo-typescript": "^0.9.0",
 		"nyc": "^12.0.2",
@@ -46,7 +45,10 @@
 		"typescript": "^3.4.3",
 		"xo": "^0.22.0"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"defer-to-connect": "^1.0.2"
+	},
+	"types": "dist",
 	"xo": {
 		"extends": "xo-typescript",
 		"extensions": [
@@ -64,6 +66,7 @@
 		]
 	},
 	"ava": {
+		"babel": false,
 		"compileEnhancements": false,
 		"extensions": [
 			"ts"

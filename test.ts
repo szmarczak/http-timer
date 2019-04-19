@@ -5,15 +5,15 @@ import util from 'util';
 import {URL, parse as parseUrl} from 'url';
 import EventEmitter from 'events';
 import test from 'ava';
-import pEvent from 'p-event'; // eslint-disable-line import/newline-after-import
-import timer = require('./source');
+import pEvent from 'p-event';
+import timer, {Timings} from './source';
 
-let s: http.Server & {
+let server: http.Server & {
 	url?: string;
 };
 
 test.before('setup', async () => {
-	s = http.createServer((request, response) => {
+	server = http.createServer((request, response) => {
 		if (request.url === '/delayed-response') {
 			response.write('o');
 
@@ -23,20 +23,20 @@ test.before('setup', async () => {
 		}
 	});
 
-	s.listen = util.promisify(s.listen.bind(s));
-	s.close = util.promisify(s.close.bind(s));
+	server.listen = util.promisify(server.listen.bind(server));
+	server.close = util.promisify(server.close.bind(server));
 
-	await s.listen();
-	s.url = `http://127.0.0.1:${(s.address() as AddressInfo).port}`;
+	await server.listen();
+	server.url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
 test.after('cleanup', async () => {
-	await s.close();
+	await server.close();
 });
 
 const error = 'Simple error';
 
-const makeRequest = (url = 'https://httpbin.org/anything'): {request: ClientRequest; timings: timer.Timings} => {
+const makeRequest = (url = 'https://httpbin.org/anything'): {request: ClientRequest; timings: Timings} => {
 	const {protocol} = new URL(url);
 	const fn = protocol === 'http:' ? http : https;
 
@@ -108,7 +108,7 @@ test('no memory leak (`lookup` event)', async t => {
 
 test('sets `total` on request error', async t => {
 	const request = http.get({
-		...parseUrl(`${s.url}/delayed-response`),
+		...parseUrl(`${server.url}/delayed-response`),
 		timeout: 1
 	});
 	request.on('timeout', () => {
@@ -125,7 +125,7 @@ test('sets `total` on request error', async t => {
 });
 
 test('sets `total` on response error', async t => {
-	const request = http.get(`${s.url}/delayed-response`, response => {
+	const request = http.get(`${server.url}/delayed-response`, response => {
 		setImmediate(() => {
 			response.emit('error', new Error(error));
 		});
