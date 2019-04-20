@@ -21,7 +21,7 @@ Yarn:
 ```js
 'use strict';
 const https = require('https');
-const timer = require('@szmarczak/http-timer');
+const timer = require('@szmarczak/http-timer').default;
 
 const request = https.get('https://httpbin.org/anything');
 const timings = timer(request);

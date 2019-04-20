@@ -2,7 +2,7 @@
 	"extends": "@sindresorhus/tsconfig",
 	"compilerOptions": {
 		"outDir": "dist",
-		"target": "es2015" // Node.js 6
+		"target": "es2017" // Node.js 8
 	},
 	"include": [
 		"source"
