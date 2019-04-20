@@ -1,5 +1,5 @@
 import {AddressInfo} from 'net';
-import http, {ClientRequest} from 'http';
+import http, {ClientRequest, IncomingMessage} from 'http';
 import https from 'https';
 import util from 'util';
 import {URL, parse as parseUrl} from 'url'; // eslint-disable-line node/no-deprecated-api
@@ -15,14 +15,10 @@ let server: http.Server & {
 };
 
 test.before('setup', async () => {
-	server = http.createServer((request, response) => {
-		if (request.url === '/delayed-response') {
-			response.write('o');
+	server = http.createServer((_request, response) => {
+		response.write('o');
 
-			setTimeout(() => response.end('k'), 200);
-		} else {
-			response.end('ok');
-		}
+		setTimeout(() => response.end('k'), 200);
 	});
 
 	server.listenAsync = util.promisify(server.listen.bind(server));
@@ -110,7 +106,7 @@ test('no memory leak (`lookup` event)', async t => {
 
 test('sets `total` on request error', async t => {
 	const request = http.get({
-		...parseUrl(`${server.url}/delayed-response`),
+		...parseUrl(server.url!),
 		timeout: 1
 	});
 	request.on('timeout', () => {
@@ -127,7 +123,7 @@ test('sets `total` on request error', async t => {
 });
 
 test('sets `total` on response error', async t => {
-	const request = http.get(`${server.url}/delayed-response`, response => {
+	const request = http.get(server.url!, (response: IncomingMessage) => {
 		setImmediate(() => {
 			response.emit('error', new Error(error));
 		});

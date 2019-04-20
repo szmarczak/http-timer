@@ -4,7 +4,7 @@
 	"description": "Timings for HTTP requests",
 	"main": "dist",
 	"engines": {
-		"node": ">=8"
+		"node": ">=6"
 	},
 	"scripts": {
 		"test": "xo && nyc ava",
@@ -55,9 +55,7 @@
 			"ts"
 		],
 		"rules": {
-			"import/no-unresolved": "off",
-			"ava/no-ignored-test-files": "off",
-			"@typescript-eslint/no-require-imports": "off"
+			"ava/no-ignored-test-files": "off"
 		}
 	},
 	"nyc": {
