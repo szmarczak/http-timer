@@ -2,16 +2,18 @@
 	"name": "@szmarczak/http-timer",
 	"version": "1.1.2",
 	"description": "Timings for HTTP requests",
-	"main": "source",
+	"main": "dist",
 	"engines": {
-		"node": ">=6"
+		"node": ">=8"
 	},
 	"scripts": {
 		"test": "xo && nyc ava",
+		"build": "del-cli dist && tsc",
+		"prepublishOnly": "npm run build",
 		"coveralls": "nyc report --reporter=text-lcov | coveralls"
 	},
 	"files": [
-		"source"
+		"dist"
 	],
 	"keywords": [
 		"http",
@@ -29,19 +31,46 @@
 		"url": "https://github.com/szmarczak/http-timer/issues"
 	},
 	"homepage": "https://github.com/szmarczak/http-timer#readme",
-	"xo": {
-		"rules": {
-			"unicorn/filename-case": "camelCase"
-		}
+	"dependencies": {
+		"defer-to-connect": "^1.0.2"
 	},
 	"devDependencies": {
-		"ava": "^0.25.0",
-		"coveralls": "^3.0.2",
-		"p-event": "^2.1.0",
-		"nyc": "^12.0.2",
-		"xo": "^0.22.0"
+		"@sindresorhus/tsconfig": "^0.3.0",
+		"@types/node": "^11.13.6",
+		"@typescript-eslint/eslint-plugin": "^1.6.0",
+		"ava": "^1.4.1",
+		"coveralls": "^3.0.3",
+		"del-cli": "^1.1.0",
+		"eslint-config-xo-typescript": "^0.9.0",
+		"nyc": "^14.0.0",
+		"p-event": "^4.1.0",
+		"ts-node": "^8.1.0",
+		"typescript": "^3.4.4",
+		"xo": "^0.24.0"
 	},
-	"dependencies": {
-		"defer-to-connect": "^1.0.1"
+	"types": "dist",
+	"xo": {
+		"extends": "xo-typescript",
+		"extensions": [
+			"ts"
+		],
+		"rules": {
+			"ava/no-ignored-test-files": "off"
+		}
+	},
+	"nyc": {
+		"extension": [
+			".ts"
+		]
+	},
+	"ava": {
+		"babel": false,
+		"compileEnhancements": false,
+		"extensions": [
+			"ts"
+		],
+		"require": [
+			"ts-node/register"
+		]
 	}
 }

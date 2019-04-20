@@ -21,7 +21,7 @@ Yarn:
 ```js
 'use strict';
 const https = require('https');
-const timer = require('@szmarczak/http-timer');
+const timer = require('@szmarczak/http-timer').default;
 
 const request = https.get('https://httpbin.org/anything');
 const timings = timer(request);
@@ -72,6 +72,8 @@ Returns: `Object`
 	- `firstByte` - `timings.response - timings.upload`
 	- `download` - `timings.end - timings.response`
 	- `total` - `timings.end - timings.start` or `timings.error - timings.start`
+
+If something is not measured yet, it will be `undefined`.
 
 **Note**: The time is a `number` representing the milliseconds elapsed since the UNIX epoch.
 
