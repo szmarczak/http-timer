@@ -69,7 +69,7 @@ export default (request: ClientRequest): Timings => {
 
 	handleError(request);
 
-	request.once('socket', (socket: Socket): void => {
+	request.prependOnceListener('socket', (socket: Socket): void => {
 		timings.socket = Date.now();
 		timings.phases.wait = timings.socket - timings.start;
 
@@ -78,7 +78,7 @@ export default (request: ClientRequest): Timings => {
 			timings.phases.dns = timings.lookup - timings.socket!;
 		};
 
-		socket.once('lookup', lookupListener);
+		socket.prependOnceListener('lookup', lookupListener);
 
 		deferToConnect(socket, () => {
 			timings.connect = Date.now();
@@ -97,7 +97,7 @@ export default (request: ClientRequest): Timings => {
 		});
 	});
 
-	request.once('finish', () => {
+	request.prependOnceListener('finish', () => {
 		uploadFinished = true;
 
 		if (timings.connect) {
@@ -105,13 +105,13 @@ export default (request: ClientRequest): Timings => {
 		}
 	});
 
-	request.once('response', (response: IncomingMessage): void => {
+	request.prependOnceListener('response', (response: IncomingMessage): void => {
 		timings.response = Date.now();
 		timings.phases.firstByte = timings.response - timings.upload!;
 
 		handleError(response);
 
-		response.once('end', () => {
+		response.prependOnceListener('end', () => {
 			timings.end = Date.now();
 			timings.phases.download = timings.end - timings.response!;
 			timings.phases.total = timings.end - timings.start;

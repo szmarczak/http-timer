@@ -168,3 +168,14 @@ test('sensible timings', async t => {
 	t.true(timings.phases.download! < 1000);
 	t.true(timings.phases.total! < 1000);
 });
+
+test.cb('prepends once listener', t => {
+	const request = https.get('https://httpbin.org/anything')
+
+	const timings = timer(request)
+
+	request.on('response', () => {
+		t.true(typeof timings.response === 'number');
+		t.end()
+	});
+});
