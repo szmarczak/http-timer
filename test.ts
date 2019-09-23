@@ -168,3 +168,20 @@ test('sensible timings', async t => {
 	t.true(timings.phases.download! < 1000);
 	t.true(timings.phases.total! < 1000);
 });
+
+test('prepends once listeners', async t => {
+	const request = https.get('https://google.com');
+
+	const promise = new Promise(resolve => {
+		request.once('response', () => {
+			t.true(typeof timings.response === 'number');
+
+			resolve();
+		});
+
+		const timings = timer(request);
+	});
+
+	await promise;
+	request.abort();
+});

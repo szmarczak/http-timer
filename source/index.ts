@@ -2,7 +2,7 @@ import {EventEmitter} from 'events';
 import {Socket} from 'net';
 import {ClientRequest, IncomingMessage} from 'http';
 // @ts-ignore
-import deferToConnect from 'defer-to-connect';
+import deferToConnect = require('defer-to-connect');
 
 export interface Timings {
 	start: number;
@@ -61,15 +61,9 @@ export default (request: ClientRequest): Timings => {
 		};
 	};
 
-	let uploadFinished = false;
-	const onUpload = (): void => {
-		timings.upload = Date.now();
-		timings.phases.request = timings.upload - timings.connect!;
-	};
-
 	handleError(request);
 
-	request.once('socket', (socket: Socket): void => {
+	request.prependOnceListener('socket', (socket: Socket): void => {
 		timings.socket = Date.now();
 		timings.phases.wait = timings.socket - timings.start;
 
@@ -78,7 +72,7 @@ export default (request: ClientRequest): Timings => {
 			timings.phases.dns = timings.lookup - timings.socket!;
 		};
 
-		socket.once('lookup', lookupListener);
+		socket.prependOnceListener('lookup', lookupListener);
 
 		deferToConnect(socket, () => {
 			timings.connect = Date.now();
@@ -91,27 +85,23 @@ export default (request: ClientRequest): Timings => {
 
 			timings.phases.tcp = timings.connect - timings.lookup;
 
-			if (uploadFinished && !timings.upload) {
-				onUpload();
-			}
+			// This callback is called before flushing any data,
+			// so we don't need to set `timings.phases.request` here.
 		});
 	});
 
-	request.once('finish', () => {
-		uploadFinished = true;
-
-		if (timings.connect) {
-			onUpload();
-		}
+	request.prependOnceListener('finish', () => {
+		timings.upload = Date.now();
+		timings.phases.request = timings.upload - timings.connect!;
 	});
 
-	request.once('response', (response: IncomingMessage): void => {
+	request.prependOnceListener('response', (response: IncomingMessage): void => {
 		timings.response = Date.now();
 		timings.phases.firstByte = timings.response - timings.upload!;
 
 		handleError(response);
 
-		response.once('end', () => {
+		response.prependOnceListener('end', () => {
 			timings.end = Date.now();
 			timings.phases.download = timings.end - timings.response!;
 			timings.phases.total = timings.end - timings.start;
