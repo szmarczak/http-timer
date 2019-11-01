@@ -170,12 +170,11 @@ test('sensible timings', async t => {
 });
 
 test.cb('prepends once listener', t => {
-	const request = https.get('https://httpbin.org/anything')
-
-	const timings = timer(request)
+	const request = https.get('https://httpbin.org/anything');
+	const timings = timer(request);
 
 	request.on('response', () => {
 		t.true(typeof timings.response === 'number');
-		t.end()
+		t.end();
 	});
 });
