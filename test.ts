@@ -1,11 +1,11 @@
-import {AddressInfo} from 'net';
-import http, {ClientRequest, IncomingMessage} from 'http';
-import https from 'https';
-import util from 'util';
-import {URL, parse as parseUrl} from 'url'; // eslint-disable-line node/no-deprecated-api
 import EventEmitter from 'events';
-import test from 'ava';
+import http, {ClientRequest, IncomingMessage, RequestOptions} from 'http';
+import https from 'https';
+import {AddressInfo} from 'net';
+import {parse as parseUrl, URL} from 'url'; // eslint-disable-line node/no-deprecated-api
+import util from 'util';
 import pEvent from 'p-event';
+import test from 'ava';
 import timer, {Timings} from './source';
 
 let server: http.Server & {
@@ -108,14 +108,14 @@ test('sets `total` on request error', async t => {
 	const request = http.get({
 		...parseUrl(server.url!),
 		timeout: 1
-	});
+	} as RequestOptions);
 	request.on('timeout', () => {
 		request.abort();
 	});
 
 	const timings = timer(request);
 
-	const err = await pEvent(request, 'error');
+	const err: Error = await pEvent(request, 'error');
 	t.is(err.message, 'socket hang up');
 
 	t.is(typeof timings.error, 'number');
@@ -138,12 +138,12 @@ test('sets `total` on response error', async t => {
 	t.is(timings.phases.total, timings.error! - timings.start);
 });
 
-test('doesn\'t throw when someone used `.prependOnceListener()`', async t => {
+test('doesn\'t throw when someone used `.prependOnceListener()`', t => {
 	const emitter = new EventEmitter();
 	timer(emitter as ClientRequest);
 	emitter.prependOnceListener('error', () => {});
 
-	await t.notThrows(() => emitter.emit('error', new Error(error)));
+	t.notThrows(() => emitter.emit('error', new Error(error)));
 });
 
 test('sensible timings', async t => {
