@@ -2,7 +2,7 @@ import {EventEmitter} from 'events';
 import {Socket} from 'net';
 import {ClientRequest, IncomingMessage} from 'http';
 // @ts-ignore
-import deferToConnect from 'defer-to-connect';
+import deferToConnect = require('defer-to-connect');
 
 export interface Timings {
 	start: number;
@@ -61,12 +61,6 @@ export default (request: ClientRequest): Timings => {
 		};
 	};
 
-	let uploadFinished = false;
-	const onUpload = (): void => {
-		timings.upload = Date.now();
-		timings.phases.request = timings.upload - timings.connect!;
-	};
-
 	handleError(request);
 
 	request.prependOnceListener('socket', (socket: Socket): void => {
@@ -91,18 +85,14 @@ export default (request: ClientRequest): Timings => {
 
 			timings.phases.tcp = timings.connect - timings.lookup;
 
-			if (uploadFinished && !timings.upload) {
-				onUpload();
-			}
+			// This callback is called before flushing any data,
+			// so we don't need to set `timings.phases.request` here.
 		});
 	});
 
 	request.prependOnceListener('finish', () => {
-		uploadFinished = true;
-
-		if (timings.connect) {
-			onUpload();
-		}
+		timings.upload = Date.now();
+		timings.phases.request = timings.upload - timings.connect!;
 	});
 
 	request.prependOnceListener('response', (response: IncomingMessage): void => {
