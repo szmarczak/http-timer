@@ -169,11 +169,19 @@ test('sensible timings', async t => {
 	t.true(timings.phases.total! < 1000);
 });
 
-test('prepends once listener', async t => {
-	const request = https.get('https://httpbin.org/anything');
-	const timings = timer(request);
+test('prepends once listeners', async t => {
+	const request = https.get('https://google.com');
 
-	await pEvent(request, 'response');
+	const promise = new Promise(resolve => {
+		request.once('response', () => {
+			t.true(typeof timings.response === 'number');
 
-	t.is(typeof timings.response, 'number');
+			resolve();
+		});
+
+		const timings = timer(request);
+	});
+
+	await promise;
+	request.abort();
 });
