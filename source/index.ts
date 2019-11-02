@@ -1,14 +1,14 @@
 import {EventEmitter} from 'events';
 import {Socket} from 'net';
 import {ClientRequest, IncomingMessage} from 'http';
-// @ts-ignore
-import deferToConnect = require('defer-to-connect');
+import deferToConnect from 'defer-to-connect';
 
 export interface Timings {
 	start: number;
 	socket?: number;
 	lookup?: number;
 	connect?: number;
+	secureConnect?: number;
 	upload?: number;
 	response?: number;
 	end?: number;
@@ -17,6 +17,7 @@ export interface Timings {
 		wait?: number;
 		dns?: number;
 		tcp?: number;
+		tls?: number;
 		request?: number;
 		firstByte?: number;
 		download?: number;
@@ -24,12 +25,13 @@ export interface Timings {
 	};
 }
 
-export default (request: ClientRequest): Timings => {
+const timer = (request: ClientRequest): Timings => {
 	const timings: Timings = {
 		start: Date.now(),
 		socket: undefined,
 		lookup: undefined,
 		connect: undefined,
+		secureConnect: undefined,
 		upload: undefined,
 		response: undefined,
 		end: undefined,
@@ -38,6 +40,7 @@ export default (request: ClientRequest): Timings => {
 			wait: undefined,
 			dns: undefined,
 			tcp: undefined,
+			tls: undefined,
 			request: undefined,
 			firstByte: undefined,
 			download: undefined,
@@ -74,25 +77,31 @@ export default (request: ClientRequest): Timings => {
 
 		socket.prependOnceListener('lookup', lookupListener);
 
-		deferToConnect(socket, () => {
-			timings.connect = Date.now();
+		deferToConnect(socket, {
+			connect: () => {
+				timings.connect = Date.now();
 
-			if (timings.lookup === undefined) {
-				socket.removeListener('lookup', lookupListener);
-				timings.lookup = timings.connect;
-				timings.phases.dns = timings.lookup - timings.socket!;
+				if (timings.lookup === undefined) {
+					socket.removeListener('lookup', lookupListener);
+					timings.lookup = timings.connect;
+					timings.phases.dns = timings.lookup - timings.socket!;
+				}
+
+				timings.phases.tcp = timings.connect - timings.lookup;
+
+				// This callback is called before flushing any data,
+				// so we don't need to set `timings.phases.request` here.
+			},
+			secureConnect: () => {
+				timings.secureConnect = Date.now();
+				timings.phases.tls = timings.secureConnect - timings.connect!;
 			}
-
-			timings.phases.tcp = timings.connect - timings.lookup;
-
-			// This callback is called before flushing any data,
-			// so we don't need to set `timings.phases.request` here.
 		});
 	});
 
 	request.prependOnceListener('finish', () => {
 		timings.upload = Date.now();
-		timings.phases.request = timings.upload - timings.connect!;
+		timings.phases.request = timings.upload - (timings.secureConnect || timings.connect!);
 	});
 
 	request.prependOnceListener('response', (response: IncomingMessage): void => {
@@ -110,3 +119,9 @@ export default (request: ClientRequest): Timings => {
 
 	return timings;
 };
+
+export default timer;
+
+// For CommonJS default export support
+module.exports = timer;
+module.exports.default = timer;

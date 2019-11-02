@@ -21,7 +21,7 @@ Yarn:
 ```js
 'use strict';
 const https = require('https');
-const timer = require('@szmarczak/http-timer').default;
+const timer = require('@szmarczak/http-timer');
 
 const request = https.get('https://httpbin.org/anything');
 const timings = timer(request);
@@ -33,21 +33,25 @@ request.on('response', response => {
 	});
 });
 
-// { start: 1535708511443,
-//   socket: 1535708511444,
-//   lookup: 1535708511444,
-//   connect: 1535708511582,
-//   upload: 1535708511887,
-//   response: 1535708512037,
-//   end: 1535708512040,
-//   phases:
-//    { wait: 1,
-//      dns: 0,
-//      tcp: 138,
-//      request: 305,
-//      firstByte: 150,
-//      download: 3,
-//      total: 597 } }
+// {
+//   start: 1572712180361,
+//   socket: 1572712180362,
+//   lookup: 1572712180415,
+//   connect: 1572712180571,
+//   upload: 1572712180884,
+//   response: 1572712181037,
+//   end: 1572712181039,
+//   error: null,
+//   phases: {
+//     wait: 1,
+//     dns: 53,
+//     tcp: 156,
+//     request: 313,
+//     firstByte: 153,
+//     download: 2,
+//     total: 678
+//   }
+// }
 ```
 
 ## API
@@ -60,6 +64,7 @@ Returns: `Object`
 - `socket` - Time when a socket was assigned to the request.
 - `lookup` - Time when the DNS lookup finished.
 - `connect` - Time when the socket successfully connected.
+- `secureConnect` - Time when the socket securely connected.
 - `upload` - Time when the request finished uploading.
 - `response` - Time when the request fired the `response` event.
 - `end` - Time when the response fired the `end` event.
@@ -68,12 +73,13 @@ Returns: `Object`
 	- `wait` - `timings.socket - timings.start`
 	- `dns` - `timings.lookup - timings.socket`
 	- `tcp` - `timings.connect - timings.lookup`
-	- `request` - `timings.upload - timings.connect`
+	- `tls` - ``timings.secureConnect - timings.connect`
+	- `request` - `timings.upload - (timings.secureConnect || timings.connect)`
 	- `firstByte` - `timings.response - timings.upload`
 	- `download` - `timings.end - timings.response`
 	- `total` - `timings.end - timings.start` or `timings.error - timings.start`
 
-If something is not measured yet, it will be `undefined`.
+If something has not been measured yet, it will be `undefined`.
 
 **Note**: The time is a `number` representing the milliseconds elapsed since the UNIX epoch.
 

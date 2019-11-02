@@ -1,8 +1,7 @@
 import EventEmitter from 'events';
-import http, {ClientRequest, IncomingMessage, RequestOptions} from 'http';
+import http, {ClientRequest, IncomingMessage} from 'http';
 import https from 'https';
 import {AddressInfo} from 'net';
-import {parse as parseUrl, URL} from 'url'; // eslint-disable-line node/no-deprecated-api
 import util from 'util';
 import pEvent from 'p-event';
 import test from 'ava';
@@ -52,9 +51,21 @@ test('by default everything is set to undefined', t => {
 	t.is(timings.socket, undefined);
 	t.is(timings.lookup, undefined);
 	t.is(timings.connect, undefined);
+	t.is(timings.secureConnect, undefined);
 	t.is(timings.response, undefined);
 	t.is(timings.end, undefined);
 	t.is(timings.error, undefined);
+
+	t.deepEqual(timings.phases, {
+		wait: undefined,
+		dns: undefined,
+		tcp: undefined,
+		tls: undefined,
+		request: undefined,
+		firstByte: undefined,
+		download: undefined,
+		total: undefined
+	});
 });
 
 test('timings', async t => {
@@ -68,6 +79,7 @@ test('timings', async t => {
 	t.is(typeof timings.socket, 'number');
 	t.is(typeof timings.lookup, 'number');
 	t.is(typeof timings.connect, 'number');
+	t.is(typeof timings.secureConnect, 'number');
 	t.is(typeof timings.upload, 'number');
 	t.is(typeof timings.response, 'number');
 	t.is(typeof timings.end, 'number');
@@ -83,6 +95,7 @@ test('phases', async t => {
 	t.is(typeof timings.phases.wait, 'number');
 	t.is(typeof timings.phases.dns, 'number');
 	t.is(typeof timings.phases.tcp, 'number');
+	t.is(typeof timings.phases.tls, 'number');
 	t.is(typeof timings.phases.firstByte, 'number');
 	t.is(typeof timings.phases.download, 'number');
 	t.is(typeof timings.phases.total, 'number');
@@ -90,7 +103,8 @@ test('phases', async t => {
 	t.is(timings.phases.wait, timings.socket! - timings.start);
 	t.is(timings.phases.dns, timings.lookup! - timings.socket!);
 	t.is(timings.phases.tcp, timings.connect! - timings.lookup!);
-	t.is(timings.phases.request, timings.upload! - timings.connect!);
+	t.is(timings.phases.tls, timings.secureConnect! - timings.connect!);
+	t.is(timings.phases.request, timings.upload! - timings.secureConnect!);
 	t.is(timings.phases.firstByte, timings.response! - timings.upload!);
 	t.is(timings.phases.download, timings.end! - timings.response!);
 	t.is(timings.phases.total, timings.end! - timings.start);
@@ -105,10 +119,9 @@ test('no memory leak (`lookup` event)', async t => {
 });
 
 test('sets `total` on request error', async t => {
-	const request = http.get({
-		...parseUrl(server.url!),
+	const request = http.get(server.url!, {
 		timeout: 1
-	} as RequestOptions);
+	});
 	request.on('timeout', () => {
 		request.abort();
 	});
@@ -147,7 +160,7 @@ test('doesn\'t throw when someone used `.prependOnceListener()`', t => {
 });
 
 test('sensible timings', async t => {
-	const {timings, request} = makeRequest('http://google.com');
+	const {timings, request} = makeRequest('https://google.com');
 	const now = Date.now();
 
 	const response = await pEvent(request, 'response');
@@ -157,12 +170,14 @@ test('sensible timings', async t => {
 	t.true(timings.socket! >= now);
 	t.true(timings.lookup! >= now);
 	t.true(timings.connect! >= now);
+	t.true(timings.secureConnect! >= now);
 	t.true(timings.response! >= now);
 	t.true(timings.end! >= now);
 	t.is(timings.error, undefined);
 	t.true(timings.phases.wait! < 1000);
 	t.true(timings.phases.dns! < 1000);
 	t.true(timings.phases.tcp! < 1000);
+	t.true(timings.phases.tls! < 1000);
 	t.true(timings.phases.request! < 1000);
 	t.true(timings.phases.firstByte! < 1000);
 	t.true(timings.phases.download! < 1000);
@@ -184,4 +199,26 @@ test('prepends once listeners', async t => {
 
 	await promise;
 	request.abort();
+});
+
+test('`tls` phase for https requests', async t => {
+	const {request, timings} = makeRequest('https://google.com');
+
+	const response = await pEvent(request, 'response');
+	response.resume();
+	await pEvent(response, 'end');
+
+	t.is(typeof timings.secureConnect, 'number');
+	t.is(typeof timings.phases.tls, 'number');
+});
+
+test('no `tls` phase for http requests', async t => {
+	const {request, timings} = makeRequest(server.url);
+
+	const response = await pEvent(request, 'response');
+	response.resume();
+	await pEvent(response, 'end');
+
+	t.is(timings.secureConnect, undefined);
+	t.is(timings.phases.tls, undefined);
 });
