@@ -73,7 +73,7 @@ Returns: `Object`
 	- `wait` - `timings.socket - timings.start`
 	- `dns` - `timings.lookup - timings.socket`
 	- `tcp` - `timings.connect - timings.lookup`
-	- `tls` - ``timings.secureConnect - timings.connect`
+	- `tls` - `timings.secureConnect - timings.connect`
 	- `request` - `timings.upload - (timings.secureConnect || timings.connect)`
 	- `firstByte` - `timings.response - timings.upload`
 	- `download` - `timings.end - timings.response`
