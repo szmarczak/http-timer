@@ -25,6 +25,16 @@ export interface Timings {
 	};
 }
 
+declare module 'http' {
+	interface ClientRequest {
+		timings?: Timings;
+	}
+
+	interface IncomingMessage {
+		timings?: Timings;
+	}
+}
+
 const timer = (request: ClientRequest): Timings => {
 	const timings: Timings = {
 		start: Date.now(),
@@ -47,6 +57,8 @@ const timer = (request: ClientRequest): Timings => {
 			total: undefined
 		}
 	};
+
+	request.timings = timings;
 
 	const handleError = (origin: EventEmitter): void => {
 		const emit = origin.emit.bind(origin);
@@ -107,6 +119,8 @@ const timer = (request: ClientRequest): Timings => {
 	request.prependOnceListener('response', (response: IncomingMessage): void => {
 		timings.response = Date.now();
 		timings.phases.firstByte = timings.response - timings.upload!;
+
+		response.timings = timings;
 
 		handleError(response);
 

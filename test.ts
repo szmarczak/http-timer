@@ -222,3 +222,20 @@ test('no `tls` phase for http requests', async t => {
 	t.is(timings.secureConnect, undefined);
 	t.is(timings.phases.tls, undefined);
 });
+
+test('timings are accessible via `request.timings`', t => {
+	const {request, timings} = makeRequest('https://google.com');
+	request.abort();
+
+	t.is(request.timings, timings);
+});
+
+test('timings are accessible via `response.timings`', async t => {
+	const {request, timings} = makeRequest('https://google.com');
+
+	const response = await pEvent(request, 'response');
+	t.is(response.timings, timings);
+
+	response.resume();
+	await pEvent(response, 'end');
+});

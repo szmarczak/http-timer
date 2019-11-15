@@ -19,7 +19,6 @@ Yarn:
 
 ## Usage
 ```js
-'use strict';
 const https = require('https');
 const timer = require('@szmarczak/http-timer');
 
@@ -82,6 +81,27 @@ Returns: `Object`
 If something has not been measured yet, it will be `undefined`.
 
 **Note**: The time is a `number` representing the milliseconds elapsed since the UNIX epoch.
+
+You can also access the timings through `request.timings` or `response.timings`:
+
+```js
+const https = require('https');
+const timer = require('@szmarczak/http-timer');
+
+const request = https.get('https://httpbin.org/anything');
+const timings = timer(request);
+
+console.log(request.timings === timings);
+// => true
+
+request.on('response', response => {
+	response.on('data', () => {}); // Consume the data somehow
+	response.on('end', () => {
+		console.log(response.timings === timings);
+		// => true
+	});
+});
+```
 
 ## License
 
