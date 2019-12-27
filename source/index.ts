@@ -25,17 +25,15 @@ export interface Timings {
 	};
 }
 
-declare module 'http' {
-	interface ClientRequest {
-		timings?: Timings;
-	}
-
-	interface IncomingMessage {
-		timings?: Timings;
-	}
+export interface ClientRequestWithTimings extends ClientRequest {
+	timings?: Timings;
 }
 
-const timer = (request: ClientRequest): Timings => {
+export interface IncomingMessageWithTimings extends IncomingMessage {
+	timings?: Timings;
+}
+
+const timer = (request: ClientRequestWithTimings): Timings => {
 	const timings: Timings = {
 		start: Date.now(),
 		socket: undefined,
@@ -116,7 +114,7 @@ const timer = (request: ClientRequest): Timings => {
 		timings.phases.request = timings.upload - (timings.secureConnect || timings.connect!);
 	});
 
-	request.prependOnceListener('response', (response: IncomingMessage): void => {
+	request.prependOnceListener('response', (response: IncomingMessageWithTimings): void => {
 		timings.response = Date.now();
 		timings.phases.firstByte = timings.response - timings.upload!;
 

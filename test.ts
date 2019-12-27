@@ -5,7 +5,7 @@ import {AddressInfo} from 'net';
 import util from 'util';
 import pEvent from 'p-event';
 import test from 'ava';
-import timer, {Timings} from './source';
+import timer, {Timings, ClientRequestWithTimings, IncomingMessageWithTimings} from './source';
 
 let server: http.Server & {
 	url?: string;
@@ -227,15 +227,30 @@ test('timings are accessible via `request.timings`', t => {
 	const {request, timings} = makeRequest('https://google.com');
 	request.abort();
 
-	t.is(request.timings, timings);
+	const typedRequest = request as ClientRequestWithTimings;
+
+	t.is(typedRequest.timings, timings);
 });
 
 test('timings are accessible via `response.timings`', async t => {
 	const {request, timings} = makeRequest('https://google.com');
 
-	const response = await pEvent(request, 'response');
-	t.is(response.timings, timings);
+	const response: IncomingMessage = await pEvent(request, 'response');
+	const typedResponse = response as IncomingMessageWithTimings;
+
+	t.is(typedResponse.timings, timings);
 
 	response.resume();
 	await pEvent(response, 'end');
+});
+
+test('can extend `http.IncomingMessage`', t => {
+	interface Response extends IncomingMessage {
+		timings: boolean;
+	}
+
+	// eslint-disable-next-line no-unused-expressions
+	0 as unknown as Response;
+
+	t.pass();
 });
