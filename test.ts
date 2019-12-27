@@ -247,5 +247,8 @@ test('timings are accessible via `response.timings`', async t => {
 test('can extend `http.IncomingMessage`', t => {
 	interface Response extends IncomingMessage {}
 
+	// eslint-disable-next-line no-unused-expressions
 	0 as unknown as Response;
+
+	t.pass();
 });
