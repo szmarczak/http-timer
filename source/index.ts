@@ -25,17 +25,21 @@ export interface Timings {
 	};
 }
 
-declare module 'http' {
-	interface ClientRequest {
-		timings?: Timings;
-	}
+const timingsSymbol = Symbol('timings');
 
-	interface IncomingMessage {
-		timings?: Timings;
-	}
+export const extractTimings = (request: ClientRequestTiming | IncomingMessageTiming): Timings | undefined => {
+	return request[timingsSymbol];
+};
+
+interface ClientRequestTiming extends ClientRequest {
+	[timingsSymbol]?: Timings;
 }
 
-const timer = (request: ClientRequest): Timings => {
+interface IncomingMessageTiming extends IncomingMessage {
+	[timingsSymbol]?: Timings;
+}
+
+const timer = (request: ClientRequestTiming): Timings => {
 	const timings: Timings = {
 		start: Date.now(),
 		socket: undefined,
@@ -58,7 +62,7 @@ const timer = (request: ClientRequest): Timings => {
 		}
 	};
 
-	request.timings = timings;
+	request[timingsSymbol] = timings;
 
 	const handleError = (origin: EventEmitter): void => {
 		const emit = origin.emit.bind(origin);
@@ -116,11 +120,11 @@ const timer = (request: ClientRequest): Timings => {
 		timings.phases.request = timings.upload - (timings.secureConnect || timings.connect!);
 	});
 
-	request.prependOnceListener('response', (response: IncomingMessage): void => {
+	request.prependOnceListener('response', (response: IncomingMessageTiming): void => {
 		timings.response = Date.now();
 		timings.phases.firstByte = timings.response - timings.upload!;
 
-		response.timings = timings;
+		response[timingsSymbol] = timings;
 
 		handleError(response);
 
@@ -139,3 +143,4 @@ export default timer;
 // For CommonJS default export support
 module.exports = timer;
 module.exports.default = timer;
+module.exports.extractTimings = extractTimings;

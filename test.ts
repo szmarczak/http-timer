@@ -5,7 +5,7 @@ import {AddressInfo} from 'net';
 import util from 'util';
 import pEvent from 'p-event';
 import test from 'ava';
-import timer, {Timings} from './source';
+import timer, {Timings, extractTimings} from './source';
 
 let server: http.Server & {
 	url?: string;
@@ -223,18 +223,17 @@ test('no `tls` phase for http requests', async t => {
 	t.is(timings.phases.tls, undefined);
 });
 
-test('timings are accessible via `request.timings`', t => {
+test('timings are accessible via `extractTimings(request)`', t => {
 	const {request, timings} = makeRequest('https://google.com');
 	request.abort();
 
-	t.is(request.timings, timings);
+	t.is(extractTimings(request), timings);
 });
 
-test('timings are accessible via `response.timings`', async t => {
+test('timings are accessible via `extractTimings(response)`', async t => {
 	const {request, timings} = makeRequest('https://google.com');
-
 	const response = await pEvent(request, 'response');
-	t.is(response.timings, timings);
+	t.is(extractTimings(response), timings);
 
 	response.resume();
 	await pEvent(response, 'end');
