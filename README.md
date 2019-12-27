@@ -23,12 +23,12 @@ const https = require('https');
 const timer = require('@szmarczak/http-timer');
 
 const request = https.get('https://httpbin.org/anything');
-const timings = timer(request);
+timer(request);
 
-request.on('response', response => {
-	response.on('data', () => {}); // Consume the data somehow
-	response.on('end', () => {
-		console.log(timings);
+request.once('response', response => {
+	response.resume();
+	response.once('end', () => {
+		console.log(response.timings); // You can use `request.timings` as well
 	});
 });
 
@@ -40,7 +40,8 @@ request.on('response', response => {
 //   upload: 1572712180884,
 //   response: 1572712181037,
 //   end: 1572712181039,
-//   error: null,
+//   error: undefined,
+//   abort: undefined,
 //   phases: {
 //     wait: 1,
 //     dns: 53,
@@ -59,15 +60,18 @@ request.on('response', response => {
 
 Returns: `Object`
 
+**Note**: The time is a `number` representing the milliseconds elapsed since the UNIX epoch.
+
 - `start` - Time when the request started.
 - `socket` - Time when a socket was assigned to the request.
 - `lookup` - Time when the DNS lookup finished.
 - `connect` - Time when the socket successfully connected.
 - `secureConnect` - Time when the socket securely connected.
 - `upload` - Time when the request finished uploading.
-- `response` - Time when the request fired the `response` event.
-- `end` - Time when the response fired the `end` event.
-- `error` - Time when the request fired the `error` event.
+- `response` - Time when the request fired `response` event.
+- `end` - Time when the response fired `end` event.
+- `error` - Time when the request fired `error` event.
+- `abort` - Time when the request fired `abort` event.
 - `phases`
 	- `wait` - `timings.socket - timings.start`
 	- `dns` - `timings.lookup - timings.socket`
@@ -76,32 +80,9 @@ Returns: `Object`
 	- `request` - `timings.upload - (timings.secureConnect || timings.connect)`
 	- `firstByte` - `timings.response - timings.upload`
 	- `download` - `timings.end - timings.response`
-	- `total` - `timings.end - timings.start` or `timings.error - timings.start`
+	- `total` - `(timings.end || timings.error || timings.abort) - timings.start`
 
 If something has not been measured yet, it will be `undefined`.
-
-**Note**: The time is a `number` representing the milliseconds elapsed since the UNIX epoch.
-
-You can also access the timings through `request.timings` or `response.timings`:
-
-```js
-const https = require('https');
-const timer = require('@szmarczak/http-timer');
-
-const request = https.get('https://httpbin.org/anything');
-const timings = timer(request);
-
-console.log(request.timings === timings);
-// => true
-
-request.on('response', response => {
-	response.on('data', () => {}); // Consume the data somehow
-	response.on('end', () => {
-		console.log(response.timings === timings);
-		// => true
-	});
-});
-```
 
 ## License
 
