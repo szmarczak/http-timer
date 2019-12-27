@@ -13,6 +13,7 @@ export interface Timings {
 	response?: number;
 	end?: number;
 	error?: number;
+	abort?: number;
 	phases: {
 		wait?: number;
 		dns?: number;
@@ -44,6 +45,7 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 		response: undefined,
 		end: undefined,
 		error: undefined,
+		abort: undefined,
 		phases: {
 			wait: undefined,
 			dns: undefined,
@@ -75,6 +77,11 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 	};
 
 	handleError(request);
+
+	request.prependOnceListener('abort', (): void => {
+		timings.abort = Date.now();
+		timings.phases.total = Date.now() - timings.start;
+	});
 
 	request.prependOnceListener('socket', (socket: Socket): void => {
 		timings.socket = Date.now();

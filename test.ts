@@ -55,6 +55,7 @@ test('by default everything is set to undefined', t => {
 	t.is(timings.response, undefined);
 	t.is(timings.end, undefined);
 	t.is(timings.error, undefined);
+	t.is(timings.abort, undefined);
 
 	t.deepEqual(timings.phases, {
 		wait: undefined,
@@ -151,6 +152,18 @@ test('sets `total` on response error', async t => {
 	t.is(timings.phases.total, timings.error! - timings.start);
 });
 
+test('sets `total` on abort', async t => {
+	const request = http.get(server.url!);
+	request.abort();
+
+	const timings = timer(request);
+
+	await pEvent(request, 'abort');
+
+	t.is(typeof timings.abort, 'number');
+	t.is(timings.phases.total, timings.abort! - timings.start);
+});
+
 test('doesn\'t throw when someone used `.prependOnceListener()`', t => {
 	const emitter = new EventEmitter();
 	timer(emitter as ClientRequest);
@@ -174,6 +187,7 @@ test('sensible timings', async t => {
 	t.true(timings.response! >= now);
 	t.true(timings.end! >= now);
 	t.is(timings.error, undefined);
+	t.is(timings.abort, undefined);
 	t.true(timings.phases.wait! < 1000);
 	t.true(timings.phases.dns! < 1000);
 	t.true(timings.phases.tcp! < 1000);
