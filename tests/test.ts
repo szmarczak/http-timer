@@ -1,11 +1,12 @@
-import EventEmitter from 'events';
-import http, {ClientRequest, IncomingMessage} from 'http';
-import https from 'https';
+import {EventEmitter} from 'events';
+import http = require('http');
+import {ClientRequest, IncomingMessage} from 'http';
+import https = require('https');
 import {AddressInfo} from 'net';
-import util from 'util';
+import util = require('util');
 import pEvent from 'p-event';
 import test from 'ava';
-import timer, {Timings, ClientRequestWithTimings, IncomingMessageWithTimings} from './source';
+import timer, {Timings, ClientRequestWithTimings, IncomingMessageWithTimings} from '../source';
 
 let server: http.Server & {
 	url?: string;
@@ -167,6 +168,7 @@ test('sets `total` on abort', async t => {
 test('doesn\'t throw when someone used `.prependOnceListener()`', t => {
 	const emitter = new EventEmitter();
 	timer(emitter as ClientRequest);
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	emitter.prependOnceListener('error', () => {});
 
 	t.notThrows(() => emitter.emit('error', new Error(error)));
@@ -263,7 +265,7 @@ test('can extend `http.IncomingMessage`', t => {
 		timings: boolean;
 	}
 
-	// eslint-disable-next-line no-unused-expressions
+	// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 	0 as unknown as Response;
 
 	t.pass();

@@ -118,7 +118,7 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 
 	request.prependOnceListener('finish', () => {
 		timings.upload = Date.now();
-		timings.phases.request = timings.upload - (timings.secureConnect || timings.connect!);
+		timings.phases.request = timings.upload - (timings.secureConnect ?? timings.connect!);
 	});
 
 	request.prependOnceListener('response', (response: IncomingMessageWithTimings): void => {
