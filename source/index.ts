@@ -80,7 +80,11 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 
 	request.prependOnceListener('abort', (): void => {
 		timings.abort = Date.now();
-		timings.phases.total = Date.now() - timings.start;
+
+		// Let the `end` response event be responsible for setting the total phase
+		if (!timings.response) {
+			timings.phases.total = Date.now() - timings.start;
+		}
 	});
 
 	const onSocket = (socket: Socket): void => {

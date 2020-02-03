@@ -183,16 +183,36 @@ test('sets `total` on response error', async t => {
 	t.is(timings.phases.total, timings.error! - timings.start);
 });
 
-test('sets `total` on abort', async t => {
+test.cb('sets `total` on abort', t => {
 	const request = http.get(server.url!);
 	request.abort();
 
 	const timings = timer(request);
 
-	await pEvent(request, 'abort');
+	process.nextTick(() => {
+		t.is(typeof timings.abort, 'number');
+		t.is(timings.phases.total, timings.abort! - timings.start);
+		t.falsy((request as any).res);
 
-	t.is(typeof timings.abort, 'number');
-	t.is(timings.phases.total, timings.abort! - timings.start);
+		t.end();
+	});
+});
+
+test.cb('sets `total` on abort - after `response` event', t => {
+	const request = http.get(server.url!);
+	const timings = timer(request);
+
+	request.once('response', response => {
+		request.abort();
+
+		response.once('end', () => {
+			t.is(typeof timings.abort, 'number');
+			t.is(timings.phases.total, timings.end! - timings.start);
+			t.truthy((request as any).res);
+
+			t.end();
+		});
+	});
 });
 
 test('doesn\'t throw when someone used `.prependOnceListener()`', t => {
