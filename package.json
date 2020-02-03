@@ -35,12 +35,12 @@
 		"defer-to-connect": "^2.0.0"
 	},
 	"devDependencies": {
-		"@ava/typescript": "^1.0.0",
+		"@ava/typescript": "^1.1.0",
 		"@sindresorhus/tsconfig": "^0.7.0",
 		"@types/node": "^13.5.1",
 		"@typescript-eslint/eslint-plugin": "^2.18.0",
 		"@typescript-eslint/parser": "^2.18.0",
-		"ava": "^3.1.0",
+		"ava": "^3.2.0",
 		"coveralls": "^3.0.9",
 		"del-cli": "^3.0.0",
 		"eslint-config-xo-typescript": "^0.24.1",
@@ -62,9 +62,6 @@
 		]
 	},
 	"ava": {
-		"files": [
-			"!**/*.d.ts"
-		],
 		"typescript": {
 			"rewritePaths": {
 				"tests/": "dist/tests/"
