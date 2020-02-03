@@ -127,7 +127,16 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 		timings.phases.request = timings.upload - (timings.secureConnect ?? timings.connect!);
 	};
 
-	if (request.writableFinished) {
+	const writableFinished = (): boolean => {
+		if (typeof request.writableFinished === 'boolean') {
+			return request.writableFinished;
+		}
+
+		// Node.js doesn't have `request.writableFinished` property
+		return request.finished && (request as any).outputSize === 0 && (!request.socket || request.socket.writableLength === 0);
+	};
+
+	if (writableFinished()) {
 		onUpload();
 	} else {
 		request.prependOnceListener('finish', onUpload);
