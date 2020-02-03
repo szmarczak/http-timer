@@ -34,11 +34,11 @@ test.after('cleanup', async () => {
 
 const error = 'Simple error';
 
-const makeRequest = (url = 'https://httpbin.org/anything'): {request: ClientRequest; timings: Timings} => {
+const makeRequest = (url = 'https://httpbin.org/anything', options: http.RequestOptions = {agent: false}): {request: ClientRequest; timings: Timings} => {
 	const {protocol} = new URL(url);
 	const fn = protocol === 'http:' ? http : https;
 
-	const request = fn.get(url);
+	const request = fn.get(url, options);
 	const timings = timer(request);
 
 	return {request, timings};
@@ -68,6 +68,36 @@ test('by default everything is set to undefined', t => {
 		download: undefined,
 		total: undefined
 	});
+});
+
+test('timings (socket reuse)', async t => {
+	const agent = new http.Agent({keepAlive: true});
+
+	{
+		const {request} = makeRequest(server.url, {agent});
+		const response = await pEvent(request, 'response');
+		response.resume();
+		await pEvent(response, 'end');
+	}
+
+	{
+		const {request} = makeRequest(server.url, {agent});
+		await pEvent(request, 'socket');
+		const timings = timer(request);
+
+		const response = await pEvent(request, 'response');
+		response.resume();
+		await pEvent(response, 'end');
+
+		t.true(timings.phases.wait! <= 1);
+		t.true(timings.phases.dns! <= 1);
+		t.true(timings.phases.tcp! <= 1);
+		t.true(timings.phases.request! <= 1);
+	}
+
+	agent.destroy();
+
+	t.pass();
 });
 
 test('timings', async t => {

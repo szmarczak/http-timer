@@ -83,7 +83,7 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 		timings.phases.total = Date.now() - timings.start;
 	});
 
-	request.prependOnceListener('socket', (socket: Socket): void => {
+	const onSocket = (socket: Socket): void => {
 		timings.socket = Date.now();
 		timings.phases.wait = timings.socket - timings.start;
 
@@ -114,12 +114,24 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 				timings.phases.tls = timings.secureConnect - timings.connect!;
 			}
 		});
-	});
+	};
 
-	request.prependOnceListener('finish', () => {
+	if (request.socket) {
+		onSocket(request.socket);
+	} else {
+		request.prependOnceListener('socket', onSocket);
+	}
+
+	const onUpload = () => {
 		timings.upload = Date.now();
 		timings.phases.request = timings.upload - (timings.secureConnect ?? timings.connect!);
-	});
+	};
+
+	if (request.writableFinished) {
+		onUpload();
+	} else {
+		request.prependOnceListener('finish', onUpload);
+	}
 
 	request.prependOnceListener('response', (response: IncomingMessageWithTimings): void => {
 		timings.response = Date.now();
