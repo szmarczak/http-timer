@@ -1,6 +1,6 @@
 {
 	"name": "@szmarczak/http-timer",
-	"version": "4.0.4",
+	"version": "4.0.5",
 	"description": "Timings for HTTP requests",
 	"main": "dist/source",
 	"engines": {
