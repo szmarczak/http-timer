@@ -34,6 +34,8 @@ export interface IncomingMessageWithTimings extends IncomingMessage {
 	timings?: Timings;
 }
 
+const nodejsMajorVersion = Number(process.versions.node.split('.')[0]);
+
 const timer = (request: ClientRequestWithTimings): Timings => {
 	const timings: Timings = {
 		start: Date.now(),
@@ -81,8 +83,9 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 	request.prependOnceListener('abort', (): void => {
 		timings.abort = Date.now();
 
-		// Let the `end` response event be responsible for setting the total phase
-		if (!timings.response) {
+		// Let the `end` response event be responsible for setting the total phase,
+		// unless the Node.js major version is >= 13.
+		if (!timings.response || nodejsMajorVersion >= 13) {
 			timings.phases.total = Date.now() - timings.start;
 		}
 	});

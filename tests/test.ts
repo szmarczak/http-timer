@@ -32,6 +32,8 @@ test.after('cleanup', async () => {
 	await server.closeAsync();
 });
 
+const nodejsMajorVersion = Number(process.versions.node.split('.')[0]);
+
 const error = 'Simple error';
 
 const makeRequest = (url = 'https://httpbin.org/anything', options: http.RequestOptions = {agent: false}): {request: ClientRequest; timings: Timings} => {
@@ -205,13 +207,23 @@ test.cb('sets `total` on abort - after `response` event', t => {
 	request.once('response', response => {
 		request.abort();
 
-		response.once('end', () => {
-			t.is(typeof timings.abort, 'number');
-			t.is(timings.phases.total, timings.end! - timings.start);
-			t.truthy((request as any).res);
+		if (nodejsMajorVersion >= 13) {
+			process.nextTick(() => {
+				t.is(typeof timings.abort, 'number');
+				t.is(timings.phases.total, timings.abort! - timings.start);
+				t.truthy((request as any).res);
 
-			t.end();
-		});
+				t.end();
+			});
+		} else {
+			response.once('end', () => {
+				t.is(typeof timings.abort, 'number');
+				t.is(timings.phases.total, timings.end! - timings.start);
+				t.truthy((request as any).res);
+
+				t.end();
+			});
+		}
 	});
 });
 

@@ -59,6 +59,9 @@
 	"nyc": {
 		"extension": [
 			".ts"
+		],
+		"exclude": [
+			"**/tests/**"
 		]
 	},
 	"ava": {
