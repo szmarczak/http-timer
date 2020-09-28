@@ -36,11 +36,11 @@ const nodejsMajorVersion = Number(process.versions.node.split('.')[0]);
 
 const error = 'Simple error';
 
-const makeRequest = (url = 'https://httpbin.org/anything', options: http.RequestOptions = {agent: false}): {request: ClientRequest; timings: Timings} => {
+const makeRequest = (url = 'https://httpbin.org/anything', options: http.RequestOptions = {}): {request: ClientRequest; timings: Timings} => {
 	const {protocol} = new URL(url);
 	const fn = protocol === 'http:' ? http : https;
 
-	const request = fn.get(url, options);
+	const request = fn.get(url, {agent: false, ...options});
 	const timings = timer(request);
 
 	return {request, timings};
@@ -327,7 +327,6 @@ test('can extend `http.IncomingMessage`', t => {
 		timings: boolean;
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 	0 as unknown as Response;
 
 	t.pass();
