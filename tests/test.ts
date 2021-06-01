@@ -149,7 +149,7 @@ test('no memory leak (`lookup` event)', async t => {
 
 	await pEvent(request, 'finish');
 
-	t.is(request.socket.listenerCount('lookup'), 0);
+	t.is(request.socket!.listenerCount('lookup'), 0);
 });
 
 test('sets `total` on request error', async t => {
@@ -265,7 +265,7 @@ test('sensible timings', async t => {
 test('prepends once listeners', async t => {
 	const request = https.get('https://google.com');
 
-	const promise = new Promise(resolve => {
+	const promise = new Promise<void>(resolve => {
 		request.once('response', () => {
 			t.true(typeof timings.response === 'number');
 
