@@ -7,6 +7,7 @@ import util = require('util');
 import pEvent from 'p-event';
 import test from 'ava';
 import timer, {Timings, ClientRequestWithTimings, IncomingMessageWithTimings} from '../source';
+import http2 = require('http2-wrapper');
 
 let server: http.Server & {
 	url?: string;
@@ -18,7 +19,9 @@ test.before('setup', async () => {
 	server = http.createServer((_request, response) => {
 		response.write('o');
 
-		setTimeout(() => response.end('k'), 200);
+		setTimeout(() => {
+			response.end('k');
+		}, 200);
 	});
 
 	server.listenAsync = util.promisify(server.listen.bind(server));
@@ -77,7 +80,7 @@ test('timings (socket reuse)', async t => {
 
 	{
 		const {request} = makeRequest(server.url, {agent});
-		const response = await pEvent(request, 'response');
+		const response: IncomingMessage = await pEvent(request, 'response');
 		response.resume();
 		await pEvent(response, 'end');
 	}
@@ -87,7 +90,7 @@ test('timings (socket reuse)', async t => {
 		await pEvent(request, 'socket');
 		const timings = timer(request);
 
-		const response = await pEvent(request, 'response');
+		const response: IncomingMessage = await pEvent(request, 'response');
 		response.resume();
 		await pEvent(response, 'end');
 
@@ -104,7 +107,7 @@ test('timings (socket reuse)', async t => {
 
 test('timings', async t => {
 	const {request, timings} = makeRequest();
-	const response = await pEvent(request, 'response');
+	const response: IncomingMessage = await pEvent(request, 'response');
 	response.resume();
 	await pEvent(response, 'end');
 
@@ -121,7 +124,7 @@ test('timings', async t => {
 
 test('phases', async t => {
 	const {request, timings} = makeRequest();
-	const response = await pEvent(request, 'response');
+	const response: IncomingMessage = await pEvent(request, 'response');
 	response.resume();
 	await pEvent(response, 'end');
 
@@ -162,8 +165,8 @@ test('sets `total` on request error', async t => {
 
 	const timings = timer(request);
 
-	const err: Error = await pEvent(request, 'error');
-	t.is(err.message, 'socket hang up');
+	const error: Error = await pEvent(request, 'error');
+	t.is(error.message, 'socket hang up');
 
 	t.is(typeof timings.error, 'number');
 	t.is(timings.phases.total, timings.error! - timings.start);
@@ -177,10 +180,10 @@ test('sets `total` on response error', async t => {
 	});
 	const timings = timer(request);
 
-	const response = await pEvent(request, 'response');
-	const err: Error = await pEvent(response, 'error');
+	const response: IncomingMessage = await pEvent(request, 'response');
+	const error_: Error = await pEvent(response, 'error');
 
-	t.is(err.message, error);
+	t.is(error_.message, error);
 	t.is(typeof timings.error, 'number');
 	t.is(timings.phases.total, timings.error! - timings.start);
 });
@@ -240,7 +243,7 @@ test('sensible timings', async t => {
 	const {timings, request} = makeRequest('https://google.com');
 	const now = Date.now();
 
-	const response = await pEvent(request, 'response');
+	const response: IncomingMessage = await pEvent(request, 'response');
 	response.resume();
 	await pEvent(response, 'end');
 
@@ -282,7 +285,7 @@ test('prepends once listeners', async t => {
 test('`tls` phase for https requests', async t => {
 	const {request, timings} = makeRequest('https://google.com');
 
-	const response = await pEvent(request, 'response');
+	const response: IncomingMessage = await pEvent(request, 'response');
 	response.resume();
 	await pEvent(response, 'end');
 
@@ -293,7 +296,7 @@ test('`tls` phase for https requests', async t => {
 test('no `tls` phase for http requests', async t => {
 	const {request, timings} = makeRequest(server.url);
 
-	const response = await pEvent(request, 'response');
+	const response: IncomingMessage = await pEvent(request, 'response');
 	response.resume();
 	await pEvent(response, 'end');
 
@@ -331,3 +334,52 @@ test('can extend `http.IncomingMessage`', t => {
 
 	t.pass();
 });
+
+test('singleton', t => {
+	const {request, timings} = makeRequest('https://google.com');
+	request.abort();
+
+	const secondTimings = timer(request);
+
+	const typedRequest = request as ClientRequestWithTimings;
+
+	t.is(typedRequest.timings, timings);
+	t.is(timings, secondTimings);
+});
+
+test('sets `abort` on response.destroy()', async t => {
+	const {request, timings} = makeRequest(server.url);
+	const response = await pEvent(request, 'response');
+	response.destroy();
+
+	await pEvent(request, 'close');
+	t.is(typeof timings.abort, 'number');
+});
+
+const version = process.versions.node.split('.').map(v => Number(v)) as [number, number, number];
+if (version[0] >= 16) {
+	test('skips proxy-wrapped sockets', async t => {
+		const request = await http2.auto('https://httpbin.org/anything');
+		const timings = timer(request);
+
+		request.end();
+
+		const response: IncomingMessage = await pEvent(request, 'response');
+		response.resume();
+
+		t.is(request.socket!.listenerCount('lookup'), 0);
+
+		await pEvent(response, 'end');
+
+		t.is(typeof timings, 'object');
+		t.is(typeof timings.start, 'number');
+		t.is(typeof timings.socket, 'number');
+		t.is(timings.lookup, undefined);
+		t.is(timings.connect, undefined);
+		t.is(timings.secureConnect, undefined);
+		t.is(typeof timings.response, 'number');
+		t.is(typeof timings.end, 'number');
+		t.is(timings.error, undefined);
+		t.is(timings.abort, undefined);
+	});
+}

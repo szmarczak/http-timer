@@ -2,6 +2,7 @@ import {EventEmitter} from 'events';
 import {Socket} from 'net';
 import {ClientRequest, IncomingMessage} from 'http';
 import deferToConnect from 'defer-to-connect';
+import {types} from 'util';
 
 export interface Timings {
 	start: number;
@@ -37,6 +38,10 @@ export interface IncomingMessageWithTimings extends IncomingMessage {
 const nodejsMajorVersion = Number(process.versions.node.split('.')[0]);
 
 const timer = (request: ClientRequestWithTimings): Timings => {
+	if (request.timings) {
+		return request.timings;
+	}
+
 	const timings: Timings = {
 		start: Date.now(),
 		socket: undefined,
@@ -64,7 +69,7 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 
 	const handleError = (origin: EventEmitter): void => {
 		const emit = origin.emit.bind(origin);
-		origin.emit = (event, ...args) => {
+		origin.emit = (event, ...args: unknown[]) => {
 			// Catches the `error` event
 			if (event === 'error') {
 				timings.error = Date.now();
@@ -80,7 +85,7 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 
 	handleError(request);
 
-	request.prependOnceListener('abort', (): void => {
+	const onAbort = (): void => {
 		timings.abort = Date.now();
 
 		// Let the `end` response event be responsible for setting the total phase,
@@ -88,11 +93,17 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 		if (!timings.response || nodejsMajorVersion >= 13) {
 			timings.phases.total = Date.now() - timings.start;
 		}
-	});
+	};
+
+	request.prependOnceListener('abort', onAbort);
 
 	const onSocket = (socket: Socket): void => {
 		timings.socket = Date.now();
 		timings.phases.wait = timings.socket - timings.start;
+
+		if (types.isProxy(socket)) {
+			return;
+		}
 
 		const lookupListener = (): void => {
 			timings.lookup = Date.now();
@@ -162,6 +173,8 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 			timings.phases.download = timings.end - timings.response!;
 			timings.phases.total = timings.end - timings.start;
 		});
+
+		response.prependOnceListener('aborted', onAbort);
 	});
 
 	return timings;
