@@ -18,6 +18,10 @@ Yarn:
 > `yarn add @szmarczak/http-timer`
 
 ## Usage
+**Note:**
+> - The measured events resemble Node.js events, not the kernel ones.
+> - Sending a chunk greater than [`highWaterMark`](https://nodejs.org/api/stream.html#stream_new_stream_writable_options) will result in invalid `upload` and `response` timings. You can avoid this by splitting the payload into smaller chunks.
+
 ```js
 const https = require('https');
 const timer = require('@szmarczak/http-timer');
