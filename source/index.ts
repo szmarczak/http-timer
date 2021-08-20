@@ -1,8 +1,9 @@
-import {EventEmitter} from 'events';
-import {Socket} from 'net';
-import {ClientRequest, IncomingMessage} from 'http';
+import {errorMonitor} from 'node:events';
+import {types} from 'node:util';
+import type {EventEmitter} from 'node:events';
+import type {Socket} from 'node:net';
+import type {ClientRequest, IncomingMessage} from 'node:http';
 import deferToConnect from 'defer-to-connect';
-import {types} from 'util';
 
 export interface Timings {
 	start: number;
@@ -35,8 +36,6 @@ export interface IncomingMessageWithTimings extends IncomingMessage {
 	timings?: Timings;
 }
 
-const nodejsMajorVersion = Number(process.versions.node.split('.')[0]);
-
 const timer = (request: ClientRequestWithTimings): Timings => {
 	if (request.timings) {
 		return request.timings;
@@ -61,38 +60,24 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 			request: undefined,
 			firstByte: undefined,
 			download: undefined,
-			total: undefined
-		}
+			total: undefined,
+		},
 	};
 
 	request.timings = timings;
 
 	const handleError = (origin: EventEmitter): void => {
-		const emit = origin.emit.bind(origin);
-		origin.emit = (event, ...args: unknown[]) => {
-			// Catches the `error` event
-			if (event === 'error') {
-				timings.error = Date.now();
-				timings.phases.total = timings.error - timings.start;
-
-				origin.emit = emit;
-			}
-
-			// Saves the original behavior
-			return emit(event, ...args);
-		};
+		origin.once(errorMonitor, () => {
+			timings.error = Date.now();
+			timings.phases.total = timings.error - timings.start;
+		});
 	};
 
 	handleError(request);
 
 	const onAbort = (): void => {
 		timings.abort = Date.now();
-
-		// Let the `end` response event be responsible for setting the total phase,
-		// unless the Node.js major version is >= 13.
-		if (!timings.response || nodejsMajorVersion >= 13) {
-			timings.phases.total = Date.now() - timings.start;
-		}
+		timings.phases.total = timings.abort - timings.start;
 	};
 
 	request.prependOnceListener('abort', onAbort);
@@ -123,14 +108,11 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 				}
 
 				timings.phases.tcp = timings.connect - timings.lookup;
-
-				// This callback is called before flushing any data,
-				// so we don't need to set `timings.phases.request` here.
 			},
 			secureConnect: () => {
 				timings.secureConnect = Date.now();
 				timings.phases.tls = timings.secureConnect - timings.connect!;
-			}
+			},
 		});
 	};
 
@@ -145,16 +127,7 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 		timings.phases.request = timings.upload - (timings.secureConnect ?? timings.connect!);
 	};
 
-	const writableFinished = (): boolean => {
-		if (typeof request.writableFinished === 'boolean') {
-			return request.writableFinished;
-		}
-
-		// Node.js doesn't have `request.writableFinished` property
-		return request.finished && (request as any).outputSize === 0 && (!request.socket || request.socket.writableLength === 0);
-	};
-
-	if (writableFinished()) {
+	if (request.writableFinished) {
 		onUpload();
 	} else {
 		request.prependOnceListener('finish', onUpload);
@@ -169,6 +142,14 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 		handleError(response);
 
 		response.prependOnceListener('end', () => {
+			request.off('abort', onAbort);
+			response.off('aborted', onAbort);
+
+			if (timings.phases.total) {
+				// Aborted or errored
+				return;
+			}
+
 			timings.end = Date.now();
 			timings.phases.download = timings.end - timings.response!;
 			timings.phases.total = timings.end - timings.start;
@@ -181,7 +162,3 @@ const timer = (request: ClientRequestWithTimings): Timings => {
 };
 
 export default timer;
-
-// For CommonJS default export support
-module.exports = timer;
-module.exports.default = timer;

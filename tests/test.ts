@@ -1,13 +1,14 @@
-import {EventEmitter} from 'events';
-import http = require('http');
-import {ClientRequest, IncomingMessage} from 'http';
-import https = require('https');
-import {AddressInfo} from 'net';
-import util = require('util');
+import process from 'node:process';
+import {URL} from 'node:url';
+import {EventEmitter} from 'node:events';
+import http, {ClientRequest, IncomingMessage} from 'node:http';
+import https from 'node:https';
+import {AddressInfo} from 'node:net';
+import util from 'node:util';
 import pEvent from 'p-event';
 import test from 'ava';
-import timer, {Timings, ClientRequestWithTimings, IncomingMessageWithTimings} from '../source';
-import http2 = require('http2-wrapper');
+import http2 from 'http2-wrapper';
+import timer, {Timings, ClientRequestWithTimings, IncomingMessageWithTimings} from '../source/index.js';
 
 let server: http.Server & {
 	url?: string;
@@ -71,7 +72,7 @@ test('by default everything is set to undefined', t => {
 		request: undefined,
 		firstByte: undefined,
 		download: undefined,
-		total: undefined
+		total: undefined,
 	});
 });
 
@@ -157,7 +158,7 @@ test('no memory leak (`lookup` event)', async t => {
 
 test('sets `total` on request error', async t => {
 	const request = http.get(server.url!, {
-		timeout: 1
+		timeout: 1,
 	});
 	request.on('timeout', () => {
 		request.abort();
@@ -354,6 +355,18 @@ test('sets `abort` on response.destroy()', async t => {
 
 	await pEvent(request, 'close');
 	t.is(typeof timings.abort, 'number');
+});
+
+test.cb('works on already writableFinished request', t => {
+	const request = http.get(server.url!);
+	request.end(() => {
+		const timings = timer(request);
+
+		t.is(typeof timings.upload, 'number');
+		t.is(typeof timings.phases.request, 'number');
+
+		t.end();
+	});
 });
 
 const version = process.versions.node.split('.').map(v => Number(v)) as [number, number, number];
