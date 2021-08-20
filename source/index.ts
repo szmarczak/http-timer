@@ -1,8 +1,8 @@
-import {errorMonitor} from 'node:events';
-import {types} from 'node:util';
-import type {EventEmitter} from 'node:events';
-import type {Socket} from 'node:net';
-import type {ClientRequest, IncomingMessage} from 'node:http';
+import {errorMonitor} from 'events';
+import {types} from 'util';
+import type {EventEmitter} from 'events';
+import type {Socket} from 'net';
+import type {ClientRequest, IncomingMessage} from 'http';
 import deferToConnect from 'defer-to-connect';
 
 export interface Timings {
